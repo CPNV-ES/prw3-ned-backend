@@ -10,7 +10,7 @@ This project is a web application that allows users to create and share their pr
 
 - NodeJS v20.19.4
 - NPM 10.8.2
-- MySQL instance
+- MySQL 8.4
 
 ### Configuration
 
