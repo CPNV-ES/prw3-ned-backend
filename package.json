@@ -5,7 +5,7 @@
   "main": "dist/src/app.js",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "tsx src/app.ts",
     "db:init": "prisma db push && prisma generate",
     "db:migrate": "prisma migrate dev",
