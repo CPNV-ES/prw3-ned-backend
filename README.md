@@ -8,8 +8,8 @@ This project is a web application that allows users to create and share their pr
 
 ### Prerequisites
 
-* NodeJS v20.19.4
-* NPM 10.8.2 
+- NodeJS v20.19.4
+- NPM 10.8.2
 
 ### Configuration
 
@@ -19,7 +19,7 @@ Copy the .env.example file to .env and fill in the required environment variable
 
 ### On dev environment
 
-TODO 
+TODO
 
 ### On integration environment
 
@@ -33,15 +33,16 @@ TODO
 
 ## Collaborate
 
-
 ### Commit Guidelines
 
-Use conventional commit messages to describe your changes. 
+Use conventional commit messages to describe your changes.
+
 - https://www.conventionalcommits.org/en/v1.0.0/
 - https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13#file-conventional-commits-cheatsheet-md
 
 Current commit types include:
 Changes relevant to the API or UI:
+
 - `feat`: Commits that add, adjust or remove a new feature to the API or UI
 - `fix`: Commits that fix an API or UI bug of a preceded feat commit
 - `refactor`: Commits that rewrite or restructure code without altering API or UI behavior
@@ -63,6 +64,7 @@ Changes relevant to the API or UI:
 ### Branching Strategy
 
 We follow a simple branching strategy is gitflow, which includes the following branches:
+
 - `main`: The main branch that contains the production-ready code. All features and fixes are merged into this branch after they have been tested and reviewed.
 - `develop`: The development branch where all features and fixes are merged before they are ready for production. This branch is used for testing and integration.
 - `feature/*`: Feature branches that are created from the develop branch for each new feature or bug fix. These branches are merged back into develop once the feature or fix is complete and tested
