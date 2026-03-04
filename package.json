@@ -5,8 +5,10 @@
   "main": "dist/src/app.js",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "tsx src/app.ts",
+    "db:init": "prisma db push && prisma generate",
+    "db:migrate": "prisma migrate dev",
     "start": "npm run build && NODE_ENV=production node dist/src/app.js",
     "test": "tsx --test",
     "lint": "eslint .",
@@ -14,15 +16,19 @@
     "check:format": "prettier --check ."
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^7.4.2",
+    "@prisma/client": "^7.4.2",
+    "dotenv": "^17.3.1",
     "express": "^4.21.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/express": "^5.0.3",
-    "@types/node": "^24.6.1",
+    "@types/node": "^25.3.3",
     "eslint": "^10.0.2",
     "jiti": "^2.6.1",
     "prettier": "^3.8.1",
+    "prisma": "^7.4.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1"

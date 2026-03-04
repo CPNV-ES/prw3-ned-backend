@@ -10,6 +10,7 @@ This project is a web application that allows users to create and share their pr
 
 - NodeJS v20.19.4
 - NPM 10.8.2
+- MySQL 8.4
 
 ### Configuration
 
@@ -19,7 +20,11 @@ Copy the .env.example file to .env and fill in the required environment variable
 
 ### On dev environment
 
-TODO
+```bash
+npm install
+npm run db:init
+npm run dev
+```
 
 ### On integration environment
 
