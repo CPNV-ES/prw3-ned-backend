@@ -21,7 +21,7 @@ Copy the .env.example file to .env and fill in the required environment variable
 ### On dev environment
 
 ```bash
-npm install 
+npm install
 npm run db:init
 npm run dev
 ```
