@@ -1,7 +1,8 @@
-const express = require("express");
-const healthRoutes = require("./routes/health.routes");
-const errorHandler = require("./middlewares/errorHandler");
-const { port } = require("./config/env");
+import express from "express";
+
+import { port } from "./config/env";
+import errorHandler from "./middlewares/errorHandler";
+import healthRoutes from "./routes/health.routes";
 
 const app = express();
 
