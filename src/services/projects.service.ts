@@ -61,6 +61,23 @@ async function update(
   });
 }
 
+async function like(projectId: number): Promise<Project> {
+  return run(async () => {
+    const project = await prisma.projects.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new ProjectNotFoundError();
+    }
+
+    return prisma.projects.update({
+      where: { id: projectId },
+      data: { likes: (project.likes || 0) + 1 },
+    });
+  });
+}
+
 async function destroy(projectId: number): Promise<void> {
   await run(async () => {
     await prisma.projects.delete({
@@ -74,5 +91,6 @@ export const projectsService = {
   getById,
   create,
   update,
+  like,
   destroy,
 };
