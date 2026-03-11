@@ -10,7 +10,8 @@
     "db:init": "prisma db push && prisma generate",
     "db:migrate": "prisma migrate dev",
     "start": "npm run build && NODE_ENV=production node dist/src/app.js",
-    "test": "tsx --test",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check:format": "prettier --check ."
@@ -24,11 +25,16 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.3.3",
+    "@types/supertest": "^7.2.0",
     "eslint": "^10.0.2",
+    "jest": "^30.3.0",
     "jiti": "^2.6.1",
     "prettier": "^3.8.1",
     "prisma": "^7.4.2",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1"
