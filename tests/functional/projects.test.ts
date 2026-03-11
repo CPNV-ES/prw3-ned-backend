@@ -8,6 +8,7 @@ jest.mock("../../src/services/projects.service", () => ({
     getById: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    like: jest.fn(),
     destroy: jest.fn(),
   },
 }));
@@ -159,6 +160,37 @@ describe("Projects Functional API", () => {
     expect(response.body).toEqual(
       expect.objectContaining({ message: "db fail" }),
     );
+  });
+
+  it("POST /api/projects/:id/like should increment likes", async () => {
+    const likedProject = { ...sampleProject, likes: 11 };
+    mockedProjectsService.like.mockResolvedValue(likedProject);
+
+    const response = await request(app).post("/api/projects/1/like");
+
+    expect(mockedProjectsService.like).toHaveBeenCalledWith(1);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(likedProject);
+  });
+
+  it("POST /api/projects/:id/like should return 500 on unexpected service error", async () => {
+    mockedProjectsService.like.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).post("/api/projects/1/like");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
+  });
+
+  it("POST /api/projects/:id/like should return 404 for missing project", async () => {
+    mockedProjectsService.like.mockRejectedValue(new ProjectNotFoundError());
+
+    const response = await request(app).post("/api/projects/999/like");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
   });
 
   it("DELETE /api/projects/:id should return 204", async () => {

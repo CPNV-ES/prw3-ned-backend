@@ -99,6 +99,32 @@ describe("Projects Service", () => {
     expect(result).toEqual(updated);
   });
 
+  it("like should increment likes and return updated project", async () => {
+    const projectWithLikes = { ...sampleProject, likes: 2 };
+    const likedProject = { ...sampleProject, likes: 3 };
+    prismaMock.projects.findUnique.mockResolvedValue(projectWithLikes);
+    prismaMock.projects.update.mockResolvedValue(likedProject);
+
+    const result = await projectsService.like(1);
+
+    expect(prismaMock.projects.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+    });
+    expect(prismaMock.projects.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { likes: 3 },
+    });
+    expect(result).toEqual(likedProject);
+  });
+
+  it("like should throw ProjectNotFoundError when project does not exist", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(null);
+
+    await expect(projectsService.like(999)).rejects.toBeInstanceOf(
+      ProjectNotFoundError,
+    );
+  });
+
   it("destroy should delete project", async () => {
     prismaMock.projects.delete.mockResolvedValue(sampleProject);
 
