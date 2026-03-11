@@ -1,124 +1,138 @@
 const prismaMock = {
-    projects: {
-        findMany: jest.fn(),
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-    },
+  projects: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
 };
 
 class MockPrismaClientKnownRequestError extends Error {
-    code: string;
+  code: string;
 
-    constructor(message: string, code: string) {
-        super(message);
-        this.code = code;
-    }
+  constructor(message: string, code: string) {
+    super(message);
+    this.code = code;
+  }
 }
 
 jest.mock("../../src/utils/prisma", () => ({
-    prisma: prismaMock,
+  prisma: prismaMock,
 }));
 
 jest.mock("../../src/generated/prisma/client", () => ({
-    Prisma: {
-        PrismaClientKnownRequestError: MockPrismaClientKnownRequestError,
-    },
+  Prisma: {
+    PrismaClientKnownRequestError: MockPrismaClientKnownRequestError,
+  },
 }));
 
 import { ProjectNotFoundError } from "../../src/errors/projects/project-not-found.error";
 import { projectsService } from "../../src/services/projects.service";
 
 const sampleProject = {
-    id: 1,
-    title: "Portfolio",
-    summary: "Project summary",
-    demo_url: "https://demo.example.com",
-    repository_url: "https://github.com/example/repo",
-    image_url: "https://images.example.com/p1.png",
-    author_id: 42,
+  id: 1,
+  title: "Portfolio",
+  summary: "Project summary",
+  demo_url: "https://demo.example.com",
+  repository_url: "https://github.com/example/repo",
+  image_url: "https://images.example.com/p1.png",
+  author_id: 42,
 };
 
 const createPayload = {
-    title: sampleProject.title,
-    summary: sampleProject.summary,
-    demo_url: sampleProject.demo_url,
-    repository_url: sampleProject.repository_url,
-    image_url: sampleProject.image_url,
-    author_id: sampleProject.author_id,
+  title: sampleProject.title,
+  summary: sampleProject.summary,
+  demo_url: sampleProject.demo_url,
+  repository_url: sampleProject.repository_url,
+  image_url: sampleProject.image_url,
+  author_id: sampleProject.author_id,
 };
 
 describe("Projects Service", () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("getAll should return projects", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    const result = await projectsService.getAll();
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([sampleProject]);
+  });
+
+  it("getById should return one project", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(sampleProject);
+
+    const result = await projectsService.getById(1);
+
+    expect(prismaMock.projects.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
     });
+    expect(result).toEqual(sampleProject);
+  });
 
-    it("getAll should return projects", async () => {
-        prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+  it("create should persist and return project", async () => {
+    prismaMock.projects.create.mockResolvedValue(sampleProject);
 
-        const result = await projectsService.getAll();
+    const result = await projectsService.create(createPayload);
 
-        expect(prismaMock.projects.findMany).toHaveBeenCalledTimes(1);
-        expect(result).toEqual([sampleProject]);
+    expect(prismaMock.projects.create).toHaveBeenCalledWith({
+      data: createPayload,
     });
+    expect(result).toEqual(sampleProject);
+  });
 
-    it("getById should return one project", async () => {
-        prismaMock.projects.findUnique.mockResolvedValue(sampleProject);
+  it("update should persist and return updated project", async () => {
+    const updated = { ...sampleProject, title: "Updated" };
+    const updatePayload = { ...createPayload, title: "Updated" };
+    prismaMock.projects.update.mockResolvedValue(updated);
 
-        const result = await projectsService.getById(1);
+    const result = await projectsService.update(1, updatePayload);
 
-        expect(prismaMock.projects.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
-        expect(result).toEqual(sampleProject);
+    expect(prismaMock.projects.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: updatePayload,
     });
+    expect(result).toEqual(updated);
+  });
 
-    it("create should persist and return project", async () => {
-        prismaMock.projects.create.mockResolvedValue(sampleProject);
+  it("destroy should delete project", async () => {
+    prismaMock.projects.delete.mockResolvedValue(sampleProject);
 
-        const result = await projectsService.create(createPayload);
+    await projectsService.destroy(1);
 
-        expect(prismaMock.projects.create).toHaveBeenCalledWith({ data: createPayload });
-        expect(result).toEqual(sampleProject);
+    expect(prismaMock.projects.delete).toHaveBeenCalledWith({
+      where: { id: 1 },
     });
+  });
 
-    it("update should persist and return updated project", async () => {
-        const updated = { ...sampleProject, title: "Updated" };
-        const updatePayload = { ...createPayload, title: "Updated" };
-        prismaMock.projects.update.mockResolvedValue(updated);
+  it("update should map Prisma P2025 to ProjectNotFoundError", async () => {
+    prismaMock.projects.update.mockRejectedValue(
+      new MockPrismaClientKnownRequestError("not found", "P2025"),
+    );
 
-        const result = await projectsService.update(1, updatePayload);
+    await expect(
+      projectsService.update(999, createPayload),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+  });
 
-        expect(prismaMock.projects.update).toHaveBeenCalledWith({
-            where: { id: 1 },
-            data: updatePayload,
-        });
-        expect(result).toEqual(updated);
-    });
+  it("destroy should map Prisma P2025 to ProjectNotFoundError", async () => {
+    prismaMock.projects.delete.mockRejectedValue(
+      new MockPrismaClientKnownRequestError("not found", "P2025"),
+    );
 
-    it("destroy should delete project", async () => {
-        prismaMock.projects.delete.mockResolvedValue(sampleProject);
+    await expect(projectsService.destroy(999)).rejects.toBeInstanceOf(
+      ProjectNotFoundError,
+    );
+  });
 
-        await projectsService.destroy(1);
+  it("should rethrow non-P2025 errors", async () => {
+    const dbError = new Error("db offline");
+    prismaMock.projects.findMany.mockRejectedValue(dbError);
 
-        expect(prismaMock.projects.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-    });
-
-    it("update should map Prisma P2025 to ProjectNotFoundError", async () => {
-        prismaMock.projects.update.mockRejectedValue(new MockPrismaClientKnownRequestError("not found", "P2025"));
-
-        await expect(projectsService.update(999, createPayload)).rejects.toBeInstanceOf(ProjectNotFoundError);
-    });
-
-    it("destroy should map Prisma P2025 to ProjectNotFoundError", async () => {
-        prismaMock.projects.delete.mockRejectedValue(new MockPrismaClientKnownRequestError("not found", "P2025"));
-
-        await expect(projectsService.destroy(999)).rejects.toBeInstanceOf(ProjectNotFoundError);
-    });
-
-    it("should rethrow non-P2025 errors", async () => {
-        const dbError = new Error("db offline");
-        prismaMock.projects.findMany.mockRejectedValue(dbError);
-
-        await expect(projectsService.getAll()).rejects.toBe(dbError);
-    });
+    await expect(projectsService.getAll()).rejects.toBe(dbError);
+  });
 });

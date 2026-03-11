@@ -15,7 +15,9 @@ jest.mock("../../src/services/projects.service", () => ({
 import { app } from "../../src/app";
 import { projectsService } from "../../src/services/projects.service";
 
-const mockedProjectsService = projectsService as jest.Mocked<typeof projectsService>;
+const mockedProjectsService = projectsService as jest.Mocked<
+  typeof projectsService
+>;
 
 const sampleProject = {
   id: 1,
@@ -56,7 +58,9 @@ describe("Projects Functional API", () => {
     const response = await request(app).get("/api/projects");
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
   });
 
   it("GET /api/projects/:id should return one project", async () => {
@@ -83,11 +87,15 @@ describe("Projects Functional API", () => {
     const response = await request(app).get("/api/projects/1");
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
   });
 
   it("POST /api/projects should return 400 when required fields are missing", async () => {
-    const response = await request(app).post("/api/projects").send({ title: "Only title" });
+    const response = await request(app)
+      .post("/api/projects")
+      .send({ title: "Only title" });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "Missing required fields" });
@@ -96,7 +104,9 @@ describe("Projects Functional API", () => {
   it("POST /api/projects should create a project", async () => {
     mockedProjectsService.create.mockResolvedValue(sampleProject);
 
-    const response = await request(app).post("/api/projects").send(createPayload);
+    const response = await request(app)
+      .post("/api/projects")
+      .send(createPayload);
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual(sampleProject);
@@ -105,17 +115,23 @@ describe("Projects Functional API", () => {
   it("POST /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.create.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).post("/api/projects").send(createPayload);
+    const response = await request(app)
+      .post("/api/projects")
+      .send(createPayload);
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
   });
 
   it("PUT /api/projects/:id should update a project", async () => {
     const updatedProject = { ...sampleProject, title: "Updated" };
     mockedProjectsService.update.mockResolvedValue(updatedProject);
 
-    const response = await request(app).put("/api/projects/1").send({ ...createPayload, title: "Updated" });
+    const response = await request(app)
+      .put("/api/projects/1")
+      .send({ ...createPayload, title: "Updated" });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(updatedProject);
@@ -124,7 +140,9 @@ describe("Projects Functional API", () => {
   it("PUT /api/projects/:id should return 404 for missing project", async () => {
     mockedProjectsService.update.mockRejectedValue(new ProjectNotFoundError());
 
-    const response = await request(app).put("/api/projects/999").send(createPayload);
+    const response = await request(app)
+      .put("/api/projects/999")
+      .send(createPayload);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -133,10 +151,14 @@ describe("Projects Functional API", () => {
   it("PUT /api/projects/:id should return 500 on unexpected service error", async () => {
     mockedProjectsService.update.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).put("/api/projects/1").send(createPayload);
+    const response = await request(app)
+      .put("/api/projects/1")
+      .send(createPayload);
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
   });
 
   it("DELETE /api/projects/:id should return 204", async () => {
@@ -163,6 +185,8 @@ describe("Projects Functional API", () => {
     const response = await request(app).delete("/api/projects/1");
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
   });
 });

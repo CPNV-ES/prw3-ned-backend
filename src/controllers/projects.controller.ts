@@ -3,7 +3,11 @@ import type { NextFunction, Request, Response } from "express";
 import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const projects = await projectsService.getAll();
     res.status(200).json(projects);
@@ -12,7 +16,11 @@ async function index(_req: Request, res: Response, next: NextFunction): Promise<
   }
 }
 
-async function show(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function show(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const projectId = parseInt(req.params.id as string, 10);
 
   try {
@@ -29,10 +37,22 @@ async function show(req: Request, res: Response, next: NextFunction): Promise<vo
   }
 }
 
-async function store(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { title, summary, demo_url, repository_url, image_url, author_id } = req.body;
+async function store(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const { title, summary, demo_url, repository_url, image_url, author_id } =
+    req.body;
 
-  if (!title || !summary || !demo_url || !repository_url || !image_url || !author_id) {
+  if (
+    !title ||
+    !summary ||
+    !demo_url ||
+    !repository_url ||
+    !image_url ||
+    !author_id
+  ) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
@@ -44,7 +64,7 @@ async function store(req: Request, res: Response, next: NextFunction): Promise<v
       demo_url,
       repository_url,
       image_url,
-      author_id
+      author_id,
     });
 
     res.status(201).json(newProject);
@@ -53,9 +73,14 @@ async function store(req: Request, res: Response, next: NextFunction): Promise<v
   }
 }
 
-async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const projectId = parseInt(req.params.id as string, 10);
-  const { title, summary, demo_url, repository_url, image_url, author_id } = req.body;
+  const { title, summary, demo_url, repository_url, image_url, author_id } =
+    req.body;
 
   try {
     const updatedProject = await projectsService.update(projectId, {
@@ -64,7 +89,7 @@ async function update(req: Request, res: Response, next: NextFunction): Promise<
       demo_url,
       repository_url,
       image_url,
-      author_id
+      author_id,
     });
 
     res.status(200).json(updatedProject);
@@ -78,7 +103,11 @@ async function update(req: Request, res: Response, next: NextFunction): Promise<
   }
 }
 
-async function destroy(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function destroy(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const projectId = parseInt(req.params.id as string, 10);
 
   try {
@@ -99,5 +128,5 @@ export const projectsController = {
   show,
   store,
   update,
-  destroy
+  destroy,
 };
