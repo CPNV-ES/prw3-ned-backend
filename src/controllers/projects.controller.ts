@@ -103,6 +103,26 @@ async function update(
   }
 }
 
+async function like(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const projectId = parseInt(req.params.id as string, 10);
+
+  try {
+    const updatedProject = await projectsService.like(projectId);
+    res.status(200).json(updatedProject);
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+
+    next(error);
+  }
+}
+
 async function destroy(
   req: Request,
   res: Response,
@@ -128,5 +148,6 @@ export const projectsController = {
   show,
   store,
   update,
+  like,
   destroy,
 };
