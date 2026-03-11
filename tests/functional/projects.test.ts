@@ -1,0 +1,168 @@
+import request from "supertest";
+
+import { ProjectNotFoundError } from "../../src/errors/projects/project-not-found.error";
+
+jest.mock("../../src/services/projects.service", () => ({
+  projectsService: {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    destroy: jest.fn(),
+  },
+}));
+
+import { app } from "../../src/app";
+import { projectsService } from "../../src/services/projects.service";
+
+const mockedProjectsService = projectsService as jest.Mocked<typeof projectsService>;
+
+const sampleProject = {
+  id: 1,
+  title: "Portfolio",
+  summary: "Project summary",
+  demo_url: "https://demo.example.com",
+  repository_url: "https://github.com/example/repo",
+  image_url: "https://images.example.com/p1.png",
+  author_id: 42,
+};
+
+const createPayload = {
+  title: sampleProject.title,
+  summary: sampleProject.summary,
+  demo_url: sampleProject.demo_url,
+  repository_url: sampleProject.repository_url,
+  image_url: sampleProject.image_url,
+  author_id: sampleProject.author_id,
+};
+
+describe("Projects Functional API", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET /api/projects should return project list", async () => {
+    mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
+
+    const response = await request(app).get("/api/projects");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([sampleProject]);
+  });
+
+  it("GET /api/projects should return 500 on unexpected service error", async () => {
+    mockedProjectsService.getAll.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).get("/api/projects");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+  });
+
+  it("GET /api/projects/:id should return one project", async () => {
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
+
+    const response = await request(app).get("/api/projects/1");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(sampleProject);
+  });
+
+  it("GET /api/projects/:id should return 404 for missing project", async () => {
+    mockedProjectsService.getById.mockResolvedValue(null);
+
+    const response = await request(app).get("/api/projects/999");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
+  });
+
+  it("GET /api/projects/:id should return 500 on unexpected service error", async () => {
+    mockedProjectsService.getById.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).get("/api/projects/1");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+  });
+
+  it("POST /api/projects should return 400 when required fields are missing", async () => {
+    const response = await request(app).post("/api/projects").send({ title: "Only title" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "Missing required fields" });
+  });
+
+  it("POST /api/projects should create a project", async () => {
+    mockedProjectsService.create.mockResolvedValue(sampleProject);
+
+    const response = await request(app).post("/api/projects").send(createPayload);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(sampleProject);
+  });
+
+  it("POST /api/projects should return 500 on unexpected service error", async () => {
+    mockedProjectsService.create.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).post("/api/projects").send(createPayload);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+  });
+
+  it("PUT /api/projects/:id should update a project", async () => {
+    const updatedProject = { ...sampleProject, title: "Updated" };
+    mockedProjectsService.update.mockResolvedValue(updatedProject);
+
+    const response = await request(app).put("/api/projects/1").send({ ...createPayload, title: "Updated" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(updatedProject);
+  });
+
+  it("PUT /api/projects/:id should return 404 for missing project", async () => {
+    mockedProjectsService.update.mockRejectedValue(new ProjectNotFoundError());
+
+    const response = await request(app).put("/api/projects/999").send(createPayload);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
+  });
+
+  it("PUT /api/projects/:id should return 500 on unexpected service error", async () => {
+    mockedProjectsService.update.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).put("/api/projects/1").send(createPayload);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+  });
+
+  it("DELETE /api/projects/:id should return 204", async () => {
+    mockedProjectsService.destroy.mockResolvedValue();
+
+    const response = await request(app).delete("/api/projects/1");
+
+    expect(response.status).toBe(204);
+    expect(response.body).toEqual({});
+  });
+
+  it("DELETE /api/projects/:id should return 404 for missing project", async () => {
+    mockedProjectsService.destroy.mockRejectedValue(new ProjectNotFoundError());
+
+    const response = await request(app).delete("/api/projects/999");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
+  });
+
+  it("DELETE /api/projects/:id should return 500 on unexpected service error", async () => {
+    mockedProjectsService.destroy.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).delete("/api/projects/1");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(expect.objectContaining({ message: "db fail" }));
+  });
+});
