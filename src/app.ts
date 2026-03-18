@@ -1,5 +1,5 @@
 import express from "express";
-import swaggerUi from 'swagger-ui-express';
+import swaggerUi from "swagger-ui-express";
 
 import { port } from "./config/env";
 import errorHandler from "./middlewares/errorHandler";
@@ -10,7 +10,7 @@ import openApiSpec from "./docs/openapi";
 const app = express();
 app.use(express.json());
 app.use("/api", healthRoutes);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 app.use("/api", projectsRoutes);
 
 app.use(errorHandler);
