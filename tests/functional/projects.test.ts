@@ -64,6 +64,70 @@ describe("Projects Functional API", () => {
     );
   });
 
+  it("GET /api/projects should pass name filter to service", async () => {
+    mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
+
+    const response = await request(app).get("/api/projects?name=Port");
+
+    expect(mockedProjectsService.getAll).toHaveBeenCalledWith({ name: "Port" });
+    expect(response.status).toBe(200);
+  });
+
+  it("GET /api/projects should pass tags filter to service", async () => {
+    mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
+
+    const response = await request(app).get("/api/projects?tags=react,node");
+
+    expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
+      tags: ["react", "node"],
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("GET /api/projects should pass ordering to service", async () => {
+    mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
+
+    const response = await request(app).get(
+      "/api/projects?sortBy=likes&order=asc",
+    );
+
+    expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
+      sortBy: "likes",
+      order: "asc",
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("GET /api/projects should default order to desc when sorting", async () => {
+    mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
+
+    const response = await request(app).get("/api/projects?sortBy=date");
+
+    expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
+      sortBy: "date",
+      order: "desc",
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("GET /api/projects should return 400 for invalid sortBy", async () => {
+    const response = await request(app).get("/api/projects?sortBy=wat");
+
+    expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "Invalid sortBy" });
+  });
+
+  it("GET /api/projects should return 400 for invalid order", async () => {
+    const response = await request(app).get(
+      "/api/projects?sortBy=likes&order=wat",
+    );
+
+    expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "Invalid order" });
+  });
+
   it("GET /api/projects/:id should return one project", async () => {
     mockedProjectsService.getById.mockResolvedValue(sampleProject);
 

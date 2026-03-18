@@ -63,6 +63,89 @@ describe("Projects Service", () => {
     expect(result).toEqual([sampleProject]);
   });
 
+  it("getAll should filter by name", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    await projectsService.getAll({ name: "Port" });
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      where: {
+        title: {
+          contains: "Port",
+        },
+      },
+    });
+  });
+
+  it("getAll should filter by tags", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    await projectsService.getAll({ tags: ["react", "node"] });
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      where: {
+        tags: {
+          some: {
+            tag: {
+              name: {
+                in: ["react", "node"],
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("getAll should order by created_at desc by default", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    await projectsService.getAll({ sortBy: "date" });
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      orderBy: { created_at: "desc" },
+    });
+  });
+
+  it("getAll should order by likes asc", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    await projectsService.getAll({ sortBy: "likes", order: "asc" });
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      orderBy: { likes: "asc" },
+    });
+  });
+
+  it("getAll should combine filters and ordering", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProject]);
+
+    await projectsService.getAll({
+      name: "Port",
+      tags: ["react"],
+      sortBy: "likes",
+      order: "desc",
+    });
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      where: {
+        title: {
+          contains: "Port",
+        },
+        tags: {
+          some: {
+            tag: {
+              name: {
+                in: ["react"],
+              },
+            },
+          },
+        },
+      },
+      orderBy: { likes: "desc" },
+    });
+  });
+
   it("getById should return one project", async () => {
     prismaMock.projects.findUnique.mockResolvedValue(sampleProject);
 
