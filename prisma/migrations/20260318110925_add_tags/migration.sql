@@ -56,7 +56,7 @@ ALTER TABLE `projects` DROP COLUMN `authorId`,
     ADD COLUMN `repository_url` VARCHAR(191) NOT NULL;
 
 -- CreateTable
-CREATE TABLE `ProjectTags` (
+CREATE TABLE `projects_tags` (
     `project_id` INTEGER NOT NULL,
     `tag_id` INTEGER NOT NULL,
 
@@ -64,11 +64,11 @@ CREATE TABLE `ProjectTags` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Tags` (
+CREATE TABLE `tags` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `Tags_name_key`(`name`),
+    UNIQUE INDEX `tags_name_key`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -76,10 +76,10 @@ CREATE TABLE `Tags` (
 ALTER TABLE `projects` ADD CONSTRAINT `projects_author_id_fkey` FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ProjectTags` ADD CONSTRAINT `ProjectTags_project_id_fkey` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `projects_tags` ADD CONSTRAINT `projects_tags_project_id_fkey` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ProjectTags` ADD CONSTRAINT `ProjectTags_tag_id_fkey` FOREIGN KEY (`tag_id`) REFERENCES `Tags`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `projects_tags` ADD CONSTRAINT `projects_tags_tag_id_fkey` FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `comments` ADD CONSTRAINT `comments_author_id_fkey` FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
