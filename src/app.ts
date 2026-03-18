@@ -1,28 +1,16 @@
 import express from "express";
 import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
 
 import { port } from "./config/env";
 import errorHandler from "./middlewares/errorHandler";
 import healthRoutes from "./routes/health.routes";
 import projectsRoutes from "./routes/projects.routes";
-
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'PRW3 - Demo Deck API',
-      version: '1.0.0',
-    },
-  },
-  apis: ['./src/routes/*.ts'],
-};
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
+import openApiSpec from "./docs/openapi";
 
 const app = express();
 app.use(express.json());
 app.use("/api", healthRoutes);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 app.use("/api", projectsRoutes);
 
 app.use(errorHandler);
