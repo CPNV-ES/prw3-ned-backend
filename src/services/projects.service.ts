@@ -12,6 +12,13 @@ export interface Project {
   author_id: number;
 }
 
+export interface ProjectsListOptions {
+  name?: string;
+  tags?: string[];
+  sortBy?: "date" | "likes";
+  order?: "asc" | "desc";
+}
+
 async function run<T>(functionToRun: () => Promise<T>): Promise<T> {
   try {
     return await functionToRun();
@@ -27,9 +34,53 @@ async function run<T>(functionToRun: () => Promise<T>): Promise<T> {
   }
 }
 
-async function getAll(): Promise<Project[]> {
+async function getAll(options?: ProjectsListOptions): Promise<Project[]> {
   return run(async () => {
-    return prisma.projects.findMany();
+    if (!options) {
+      return prisma.projects.findMany();
+    }
+
+    const where: Prisma.projectsWhereInput = {};
+
+    if (options.name) {
+      where.title = {
+        contains: options.name,
+      };
+    }
+
+    if (options.tags && options.tags.length > 0) {
+      where.tags = {
+        some: {
+          tag: {
+            name: {
+              in: options.tags,
+            },
+          },
+        },
+      };
+    }
+
+    const orderBy = (() => {
+      if (!options.sortBy) {
+        return undefined;
+      }
+
+      const order = options.order || "desc";
+
+      return options.sortBy === "likes"
+        ? ({ likes: order } as const)
+        : ({ created_at: order } as const);
+    })();
+
+    const args: Prisma.projectsFindManyArgs = {};
+    if (Object.keys(where).length > 0) {
+      args.where = where;
+    }
+    if (orderBy) {
+      args.orderBy = orderBy;
+    }
+
+    return prisma.projects.findMany(args);
   });
 }
 
