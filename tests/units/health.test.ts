@@ -1,4 +1,4 @@
-import { getSystemStatus } from "../../src/services/health.service";
+import { getSystemStatus } from "../../src/services/health.service.js";
 
 describe("Health Service", () => {
   it("should return ok status", () => {

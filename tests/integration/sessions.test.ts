@@ -1,17 +1,20 @@
 import request from "supertest";
 import { jest } from "@jest/globals";
 
-const createSessionMock = jest.fn();
-const getCurrentSessionMock = jest.fn();
-const revokeSessionTokenMock = jest.fn();
+const createSessionMock =
+  jest.fn<
+    (credentials: { username: string; password: string }) => Promise<unknown>
+  >();
+const getCurrentSessionMock = jest.fn<(token: string) => Promise<unknown>>();
+const revokeSessionTokenMock = jest.fn<(token: string) => Promise<void>>();
 
-jest.unstable_mockModule("../../src/services/sessions.service", () => ({
+jest.unstable_mockModule("../../src/services/sessions.service.js", () => ({
   createSession: createSessionMock,
   getCurrentSession: getCurrentSessionMock,
   revokeSessionToken: revokeSessionTokenMock,
 }));
 
-type AppModule = typeof import("../../src/app");
+type AppModule = typeof import("../../src/app.js");
 
 let app: AppModule["app"];
 
@@ -28,7 +31,7 @@ const currentSessionResponse = {
 
 describe("/api/sessions", () => {
   beforeAll(async () => {
-    ({ app } = await import("../../src/app"));
+    ({ app } = await import("../../src/app.js"));
   });
 
   beforeEach(() => {
@@ -63,7 +66,7 @@ describe("/api/sessions", () => {
 
   it("revokes the session token", async () => {
     const token = "revoke-session-token";
-    revokeSessionTokenMock.mockResolvedValueOnce();
+    revokeSessionTokenMock.mockResolvedValueOnce(undefined);
 
     await request(app)
       .delete("/api/sessions")

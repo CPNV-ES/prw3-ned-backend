@@ -1,10 +1,10 @@
 import { jest } from "@jest/globals";
 
-const findUniqueMock = jest.fn();
-const createMock = jest.fn();
-const hashPasswordMock = jest.fn();
+const findUniqueMock = jest.fn<() => Promise<unknown>>();
+const createMock = jest.fn<() => Promise<unknown>>();
+const hashPasswordMock = jest.fn<(password: string) => Promise<string>>();
 
-jest.unstable_mockModule("../../src/utils/prisma", () => ({
+jest.unstable_mockModule("../../src/utils/prisma.js", () => ({
   prisma: {
     users: {
       findUnique: findUniqueMock,
@@ -13,17 +13,17 @@ jest.unstable_mockModule("../../src/utils/prisma", () => ({
   },
 }));
 
-jest.unstable_mockModule("../../src/utils/password", () => ({
+jest.unstable_mockModule("../../src/utils/password.js", () => ({
   hashPassword: hashPasswordMock,
 }));
 
-type UsersServiceModule = typeof import("../../src/services/users.service");
+type UsersServiceModule = typeof import("../../src/services/users.service.js");
 
 let createUser: UsersServiceModule["createUser"];
 
 describe("users service", () => {
   beforeAll(async () => {
-    ({ createUser } = await import("../../src/services/users.service"));
+    ({ createUser } = await import("../../src/services/users.service.js"));
   });
 
   beforeEach(() => {
