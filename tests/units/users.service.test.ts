@@ -1,6 +1,8 @@
-const findUniqueMock = jest.fn<() => Promise<unknown>>();
-const createMock = jest.fn<() => Promise<unknown>>();
-const hashPasswordMock = jest.fn<(password: string) => Promise<string>>();
+const findUniqueMock: jest.MockedFunction<() => Promise<unknown>> = jest.fn();
+const createMock: jest.MockedFunction<() => Promise<unknown>> = jest.fn();
+const hashPasswordMock: jest.MockedFunction<
+  (password: string) => Promise<string>
+> = jest.fn();
 
 jest.mock("../../src/utils/prisma", () => ({
   prisma: {

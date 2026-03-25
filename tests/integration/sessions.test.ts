@@ -10,12 +10,15 @@ jest.mock("../../src/routes/projects.routes", () => {
   return { __esModule: true, default: Router() };
 });
 
-const createSessionMock =
-  jest.fn<
-    (credentials: { username: string; password: string }) => Promise<unknown>
-  >();
-const getCurrentSessionMock = jest.fn<(token: string) => Promise<unknown>>();
-const revokeSessionTokenMock = jest.fn<(token: string) => Promise<void>>();
+const createSessionMock: jest.MockedFunction<
+  (credentials: { username: string; password: string }) => Promise<unknown>
+> = jest.fn();
+const getCurrentSessionMock: jest.MockedFunction<
+  (token: string) => Promise<unknown>
+> = jest.fn();
+const revokeSessionTokenMock: jest.MockedFunction<
+  (token: string) => Promise<void>
+> = jest.fn();
 
 jest.mock("../../src/services/sessions.service", () => ({
   createSession: createSessionMock,

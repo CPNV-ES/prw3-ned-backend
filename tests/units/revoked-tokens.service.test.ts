@@ -1,15 +1,15 @@
 import crypto from "node:crypto";
 
-const upsertMock =
-  jest.fn<
-    (args: {
-      where: { token: string };
-      update: { expires_at: Date };
-      create: { token: string; expires_at: Date };
-    }) => Promise<unknown>
-  >();
-const findUniqueMock =
-  jest.fn<(args: { where: { token: string } }) => Promise<unknown>>();
+const upsertMock: jest.MockedFunction<
+  (args: {
+    where: { token: string };
+    update: { expires_at: Date };
+    create: { token: string; expires_at: Date };
+  }) => Promise<unknown>
+> = jest.fn();
+const findUniqueMock: jest.MockedFunction<
+  (args: { where: { token: string } }) => Promise<unknown>
+> = jest.fn();
 
 jest.mock("../../src/utils/prisma", () => ({
   prisma: {
