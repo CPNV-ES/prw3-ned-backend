@@ -55,7 +55,6 @@ const openApiSpec = {
                   demo_url: { type: "string" },
                   repository_url: { type: "string" },
                   image_url: { type: "string" },
-                  author_id: { type: "integer" },
                   tags: {
                     type: "array",
                     items: {
@@ -69,7 +68,6 @@ const openApiSpec = {
                   "demo_url",
                   "repository_url",
                   "image_url",
-                  "author_id",
                   "tags",
                 ],
               },
@@ -134,7 +132,6 @@ const openApiSpec = {
                   demo_url: { type: "string" },
                   repository_url: { type: "string" },
                   image_url: { type: "string" },
-                  author_id: { type: "integer" },
                   tags: {
                     type: "array",
                     items: {
@@ -148,7 +145,6 @@ const openApiSpec = {
                   "demo_url",
                   "repository_url",
                   "image_url",
-                  "author_id",
                   "tags",
                 ],
               },

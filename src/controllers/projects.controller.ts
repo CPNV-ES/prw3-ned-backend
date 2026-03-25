@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 
 import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
+import { createForbiddenError } from "../utils/http-error";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 
 async function index(
   req: Request,
@@ -114,8 +116,9 @@ async function store(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const { title, summary, demo_url, repository_url, image_url, author_id } =
-    req.body;
+  const authenticatedReq = req as AuthenticatedRequest;
+  const { title, summary, demo_url, repository_url, image_url } = req.body;
+  const currentUserId = authenticatedReq.currentUser?.id;
 
   if (
     !title ||
@@ -123,7 +126,7 @@ async function store(
     !demo_url ||
     !repository_url ||
     !image_url ||
-    !author_id
+    !currentUserId
   ) {
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -136,7 +139,7 @@ async function store(
       demo_url,
       repository_url,
       image_url,
-      author_id,
+      author_id: currentUserId,
     });
 
     res.status(201).json(newProject);
@@ -150,18 +153,29 @@ async function update(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const { title, summary, demo_url, repository_url, image_url, author_id } =
-    req.body;
+  const { title, summary, demo_url, repository_url, image_url } = req.body;
 
   try {
+    const existingProject = await projectsService.getById(projectId);
+
+    if (!existingProject) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    if (existingProject.author_id !== authenticatedReq.currentUser?.id) {
+      throw createForbiddenError("You can only modify your own projects");
+    }
+
     const updatedProject = await projectsService.update(projectId, {
       title,
       summary,
       demo_url,
       repository_url,
       image_url,
-      author_id,
+      author_id: existingProject.author_id,
     });
 
     res.status(200).json(updatedProject);
@@ -200,9 +214,21 @@ async function destroy(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
 
   try {
+    const existingProject = await projectsService.getById(projectId);
+
+    if (!existingProject) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    if (existingProject.author_id !== authenticatedReq.currentUser?.id) {
+      throw createForbiddenError("You can only delete your own projects");
+    }
+
     await projectsService.destroy(projectId);
     res.status(204).send();
   } catch (error) {

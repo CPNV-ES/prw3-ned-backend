@@ -52,7 +52,6 @@ const createPayload = {
   demo_url: sampleProject.demo_url,
   repository_url: sampleProject.repository_url,
   image_url: sampleProject.image_url,
-  author_id: sampleProject.author_id,
 };
 
 const authHeader = { Authorization: "Bearer test-token" };
@@ -62,7 +61,7 @@ describe("Projects Functional API", () => {
     jest.clearAllMocks();
     getCurrentSessionMock.mockResolvedValue({
       expiresAt: new Date().toISOString(),
-      user: { id: 1, name: "Test User", username: "test-user" },
+      user: { id: 42, name: "Test User", username: "test-user" },
     });
   });
 
@@ -217,6 +216,10 @@ describe("Projects Functional API", () => {
       .set(authHeader)
       .send(createPayload);
 
+    expect(mockedProjectsService.create).toHaveBeenCalledWith({
+      ...createPayload,
+      author_id: 42,
+    });
     expect(response.status).toBe(201);
     expect(response.body).toEqual(sampleProject);
   });
@@ -237,19 +240,26 @@ describe("Projects Functional API", () => {
 
   it("PUT /api/projects/:id should update a project", async () => {
     const updatedProject = { ...sampleProject, title: "Updated" };
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
     mockedProjectsService.update.mockResolvedValue(updatedProject);
 
     const response = await request(app)
       .put("/api/projects/1")
       .set(authHeader)
-      .send({ ...createPayload, title: "Updated" });
+      .send({ ...createPayload, title: "Updated", author_id: 999 });
 
+    expect(mockedProjectsService.getById).toHaveBeenCalledWith(1);
+    expect(mockedProjectsService.update).toHaveBeenCalledWith(1, {
+      ...createPayload,
+      title: "Updated",
+      author_id: sampleProject.author_id,
+    });
     expect(response.status).toBe(200);
     expect(response.body).toEqual(updatedProject);
   });
 
   it("PUT /api/projects/:id should return 404 for missing project", async () => {
-    mockedProjectsService.update.mockRejectedValue(new ProjectNotFoundError());
+    mockedProjectsService.getById.mockResolvedValue(null);
 
     const response = await request(app)
       .put("/api/projects/999")
@@ -261,6 +271,7 @@ describe("Projects Functional API", () => {
   });
 
   it("PUT /api/projects/:id should return 500 on unexpected service error", async () => {
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
     mockedProjectsService.update.mockRejectedValue(new Error("db fail"));
 
     const response = await request(app)
@@ -272,6 +283,24 @@ describe("Projects Functional API", () => {
     expect(response.body).toEqual(
       expect.objectContaining({ message: "db fail" }),
     );
+  });
+
+  it("PUT /api/projects/:id should return 403 for non-owner", async () => {
+    mockedProjectsService.getById.mockResolvedValue({
+      ...sampleProject,
+      author_id: 999,
+    });
+
+    const response = await request(app)
+      .put("/api/projects/1")
+      .set(authHeader)
+      .send(createPayload);
+
+    expect(mockedProjectsService.update).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      message: "You can only modify your own projects",
+    });
   });
 
   it("POST /api/projects/:id/like should increment likes", async () => {
@@ -312,18 +341,21 @@ describe("Projects Functional API", () => {
   });
 
   it("DELETE /api/projects/:id should return 204", async () => {
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
     mockedProjectsService.destroy.mockResolvedValue();
 
     const response = await request(app)
       .delete("/api/projects/1")
       .set(authHeader);
 
+    expect(mockedProjectsService.getById).toHaveBeenCalledWith(1);
+    expect(mockedProjectsService.destroy).toHaveBeenCalledWith(1);
     expect(response.status).toBe(204);
     expect(response.body).toEqual({});
   });
 
   it("DELETE /api/projects/:id should return 404 for missing project", async () => {
-    mockedProjectsService.destroy.mockRejectedValue(new ProjectNotFoundError());
+    mockedProjectsService.getById.mockResolvedValue(null);
 
     const response = await request(app)
       .delete("/api/projects/999")
@@ -334,6 +366,7 @@ describe("Projects Functional API", () => {
   });
 
   it("DELETE /api/projects/:id should return 500 on unexpected service error", async () => {
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
     mockedProjectsService.destroy.mockRejectedValue(new Error("db fail"));
 
     const response = await request(app)
@@ -344,5 +377,22 @@ describe("Projects Functional API", () => {
     expect(response.body).toEqual(
       expect.objectContaining({ message: "db fail" }),
     );
+  });
+
+  it("DELETE /api/projects/:id should return 403 for non-owner", async () => {
+    mockedProjectsService.getById.mockResolvedValue({
+      ...sampleProject,
+      author_id: 999,
+    });
+
+    const response = await request(app)
+      .delete("/api/projects/1")
+      .set(authHeader);
+
+    expect(mockedProjectsService.destroy).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      message: "You can only delete your own projects",
+    });
   });
 });

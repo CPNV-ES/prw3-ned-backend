@@ -1,9 +1,16 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { createUnauthorizedError } from "../utils/http-error";
-import { getCurrentSession } from "../services/sessions.service";
+import {
+  getCurrentSession,
+  type CurrentSessionOutput,
+} from "../services/sessions.service";
 
 const BEARER_PREFIX = "Bearer ";
+
+export type AuthenticatedRequest = Request & {
+  currentUser?: CurrentSessionOutput["user"];
+};
 
 export const extractAuthorizationToken = (req: Request): string => {
   const authorization = req.headers.authorization;
@@ -28,7 +35,8 @@ export async function requireAuth(
 ): Promise<void> {
   try {
     const token = extractAuthorizationToken(req);
-    await getCurrentSession(token);
+    const session = await getCurrentSession(token);
+    (req as AuthenticatedRequest).currentUser = session.user;
     next();
   } catch (error) {
     next(error);
