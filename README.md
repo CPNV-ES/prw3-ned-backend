@@ -33,7 +33,96 @@ TODO
 ## Directory structure
 
 ```shell
-TODO
+├───scripts
+│       seed.ts
+├───prisma
+│   │   schema.prisma
+│   │
+│   └───migrations
+│       │   migration_lock.toml
+│       │
+│       ├───20260304104741_init
+│       │       migration.sql
+│       │
+│       ├───20260311100000_add_revoked_tokens
+│       │       migration.sql
+│       │
+│       └───20260318110925_add_tags
+│               migration.sql
+├───tests
+│   ├───functional
+│   │       health.test.ts
+│   │       projects.test.ts
+│   │       sessions.test.ts
+│   │       users.test.ts
+│   │
+│   └───unit
+│           health.test.ts
+│           projects.test.ts
+│           revoked-tokens.service.test.ts
+│           users.service.test.ts
+└───src
+    │   app.ts
+    │
+    ├───config
+    │       env.ts
+    │
+    ├───controllers
+    │       health.controller.ts
+    │       projects.controller.ts
+    │       sessions.controller.ts
+    │       users.controller.ts
+    │
+    ├───docs
+    │       openapi.ts
+    │
+    ├───errors
+    │   └───projects
+    │           project-not-found.error.ts
+    │
+    ├───generated
+    │   └───prisma
+    │       │   browser.ts
+    │       │   client.ts
+    │       │   commonInputTypes.ts
+    │       │   enums.ts
+    │       │   models.ts
+    │       │
+    │       ├───internal
+    │       │       class.ts
+    │       │       prismaNamespace.ts
+    │       │       prismaNamespaceBrowser.ts
+    │       │
+    │       └───models
+    │               comments.ts
+    │               projects.ts
+    │               projects_tags.ts
+    │               revoked_tokens.ts
+    │               tags.ts
+    │               users.ts
+    │
+    ├───middlewares
+    │       errorHandler.ts
+    │
+    ├───routes
+    │       health.routes.ts
+    │       projects.routes.ts
+    │       sessions.routes.ts
+    │       users.routes.ts
+    │
+    ├───services
+    │       health.service.ts
+    │       projects.service.ts
+    │       revoked-tokens.service.ts
+    │       sessions.service.ts
+    │       users.service.ts
+    │
+    └───utils
+            http-error.ts
+            jwt.ts
+            logger.ts
+            password.ts
+            prisma.ts
 ```
 
 ## Collaborate
