@@ -17,6 +17,8 @@ jest.mock("../../src/services/projects.service", () => ({
     getAll: jest.fn(),
     getById: jest.fn(),
     create: jest.fn(),
+    getComments: jest.fn(),
+    createComment: jest.fn(),
     update: jest.fn(),
     like: jest.fn(),
     destroy: jest.fn(),
@@ -47,6 +49,14 @@ const createPayload = {
   repository_url: sampleProject.repository_url,
   image_url: sampleProject.image_url,
   author_id: sampleProject.author_id,
+};
+
+const sampleComment = {
+  id: 1,
+  content: "Nice project",
+  created_at: new Date("2026-03-25T09:00:00.000Z"),
+  author_id: 42,
+  project_id: 1,
 };
 
 describe("Projects Functional API", () => {
@@ -193,6 +203,96 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .post("/api/projects")
       .send(createPayload);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
+  });
+
+  it("GET /api/projects/:id/comments should return project comments", async () => {
+    mockedProjectsService.getComments.mockResolvedValue([sampleComment]);
+
+    const response = await request(app).get("/api/projects/1/comments");
+
+    expect(mockedProjectsService.getComments).toHaveBeenCalledWith(1);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        ...sampleComment,
+        created_at: sampleComment.created_at.toISOString(),
+      },
+    ]);
+  });
+
+  it("GET /api/projects/:id/comments should return 404 for missing project", async () => {
+    mockedProjectsService.getComments.mockRejectedValue(
+      new ProjectNotFoundError(),
+    );
+
+    const response = await request(app).get("/api/projects/999/comments");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
+  });
+
+  it("GET /api/projects/:id/comments should return 500 on unexpected service error", async () => {
+    mockedProjectsService.getComments.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app).get("/api/projects/1/comments");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual(
+      expect.objectContaining({ message: "db fail" }),
+    );
+  });
+
+  it("POST /api/projects/:id/comments should return 400 when required fields are missing", async () => {
+    const response = await request(app)
+      .post("/api/projects/1/comments")
+      .send({ content: "Nice project" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "Missing required fields" });
+  });
+
+  it("POST /api/projects/:id/comments should create a comment", async () => {
+    mockedProjectsService.createComment.mockResolvedValue(sampleComment);
+
+    const response = await request(app)
+      .post("/api/projects/1/comments")
+      .send({ content: "Nice project", author_id: 42 });
+
+    expect(mockedProjectsService.createComment).toHaveBeenCalledWith(1, {
+      content: "Nice project",
+      author_id: 42,
+    });
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      ...sampleComment,
+      created_at: sampleComment.created_at.toISOString(),
+    });
+  });
+
+  it("POST /api/projects/:id/comments should return 404 for missing project", async () => {
+    mockedProjectsService.createComment.mockRejectedValue(
+      new ProjectNotFoundError(),
+    );
+
+    const response = await request(app)
+      .post("/api/projects/999/comments")
+      .send({ content: "Nice project", author_id: 42 });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Project not found" });
+  });
+
+  it("POST /api/projects/:id/comments should return 500 on unexpected service error", async () => {
+    mockedProjectsService.createComment.mockRejectedValue(new Error("db fail"));
+
+    const response = await request(app)
+      .post("/api/projects/1/comments")
+      .send({ content: "Nice project", author_id: 42 });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
