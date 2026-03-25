@@ -2,6 +2,16 @@ import type { NextFunction, Request, Response } from "express";
 
 import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
+import {
+  createForbiddenError,
+  createUnauthorizedError,
+} from "../utils/http-error";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
+import {
+  buildDefaultProjectImageUrl,
+  buildProjectImageUrl,
+  deleteStoredProjectImage,
+} from "../utils/project-images";
 
 async function index(
   req: Request,
@@ -114,15 +124,10 @@ async function store(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const {
-    title,
-    summary,
-    demo_url,
-    repository_url,
-    image_url,
-    author_id,
-    tags,
-  } = req.body;
+  const authenticatedReq = req as AuthenticatedRequest;
+  const currentUserId = authenticatedReq.currentUser?.id;
+  const uploadedFile = req.file;
+  const { title, summary, demo_url, repository_url, tags } = req.body;
 
   const normalizedTags = Array.isArray(tags)
     ? tags
@@ -131,17 +136,14 @@ async function store(
         .filter(Boolean)
     : [];
 
-  if (
-    !title ||
-    !summary ||
-    !demo_url ||
-    !repository_url ||
-    !image_url ||
-    !author_id
-  ) {
+  if (!title || !summary || !demo_url || !repository_url || !currentUserId) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
+
+  const image_url = uploadedFile
+    ? buildProjectImageUrl(req, uploadedFile.filename)
+    : buildDefaultProjectImageUrl(req);
 
   try {
     const newProject = await projectsService.create({
@@ -150,12 +152,15 @@ async function store(
       demo_url,
       repository_url,
       image_url,
-      author_id,
+      author_id: currentUserId,
       tags: normalizedTags,
     });
 
     res.status(201).json(newProject);
   } catch (error) {
+    if (uploadedFile) {
+      await deleteStoredProjectImage(image_url);
+    }
     next(error);
   }
 }
@@ -185,10 +190,17 @@ async function commentsStore(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const { content, author_id } = req.body;
+  const { content } = req.body;
+  const currentUserId = authenticatedReq.currentUser?.id;
 
-  if (!content || !author_id) {
+  if (!currentUserId) {
+    next(createUnauthorizedError("Authentication required"));
+    return;
+  }
+
+  if (!content) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
@@ -196,7 +208,7 @@ async function commentsStore(
   try {
     const newComment = await projectsService.createComment(projectId, {
       content,
-      author_id,
+      author_id: currentUserId,
     });
 
     res.status(201).json(newComment);
@@ -215,30 +227,49 @@ async function update(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const {
-    title,
-    summary,
-    demo_url,
-    repository_url,
-    image_url,
-    author_id,
-    tags,
-  } = req.body;
+  const uploadedFile = req.file;
+  let newImageUrl: string | null = null;
+  const { title, summary, demo_url, repository_url, tags } = req.body;
 
   try {
+    const existingProject = await projectsService.getById(projectId);
+
+    if (!existingProject) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    if (existingProject.author_id !== authenticatedReq.currentUser?.id) {
+      throw createForbiddenError("You can only modify your own projects");
+    }
+
+    newImageUrl = uploadedFile
+      ? buildProjectImageUrl(req, uploadedFile.filename)
+      : null;
+    const image_url = newImageUrl ? newImageUrl : existingProject.image_url;
+
     const updatedProject = await projectsService.update(projectId, {
-      title,
-      summary,
-      demo_url,
-      repository_url,
+      title: title ?? existingProject.title,
+      summary: summary ?? existingProject.summary,
+      demo_url: demo_url ?? existingProject.demo_url,
+      repository_url: repository_url ?? existingProject.repository_url,
       image_url,
-      author_id,
+      author_id: existingProject.author_id,
       tags,
     });
 
+    if (uploadedFile && image_url !== existingProject.image_url) {
+      await deleteStoredProjectImage(existingProject.image_url);
+    }
+
     res.status(200).json(updatedProject);
   } catch (error) {
+    if (newImageUrl) {
+      await deleteStoredProjectImage(newImageUrl);
+    }
+
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
       return;
@@ -273,9 +304,21 @@ async function destroy(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
 
   try {
+    const existingProject = await projectsService.getById(projectId);
+
+    if (!existingProject) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    if (existingProject.author_id !== authenticatedReq.currentUser?.id) {
+      throw createForbiddenError("You can only delete your own projects");
+    }
+
     await projectsService.destroy(projectId);
     res.status(204).send();
   } catch (error) {

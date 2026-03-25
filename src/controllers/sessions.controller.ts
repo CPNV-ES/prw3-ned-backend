@@ -1,30 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 
-import {
-  createBadRequestError,
-  createUnauthorizedError,
-} from "../utils/http-error";
+import { createBadRequestError } from "../utils/http-error";
 import {
   createSession,
   getCurrentSession,
   revokeSessionToken,
 } from "../services/sessions.service";
-
-const BEARER_PREFIX = "Bearer ";
-
-const extractAuthorizationToken = (req: Request) => {
-  const authorization = req.headers.authorization;
-  if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
-    throw createUnauthorizedError("Missing or invalid authorization header");
-  }
-
-  const token = authorization.slice(BEARER_PREFIX.length).trim();
-  if (!token) {
-    throw createUnauthorizedError("Missing or invalid authorization header");
-  }
-
-  return token;
-};
+import { extractAuthorizationToken } from "../middlewares/auth.middleware";
 
 export async function createSessionController(
   req: Request,

@@ -11,14 +11,23 @@ jest.mock("../../src/routes/projects.routes", () => {
 });
 
 const createUserMock = jest.fn();
+const listUsersMock = jest.fn();
+const getUserByIdMock = jest.fn();
+const getCurrentSessionMock = jest.fn();
 
 jest.mock("../../src/services/users.service", () => ({
   createUser: createUserMock,
+  listUsers: listUsersMock,
+  getUserById: getUserByIdMock,
+}));
+
+jest.mock("../../src/services/sessions.service", () => ({
+  getCurrentSession: getCurrentSessionMock,
 }));
 
 import { app } from "../../src/app";
 
-describe("POST /api/users", () => {
+describe("/api/users", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -39,5 +48,59 @@ describe("POST /api/users", () => {
 
     expect(createUserMock).toHaveBeenCalledWith(payload);
     expect(response.body).toEqual(newUser);
+  });
+
+  it("rejects GET /api/users when not authenticated", async () => {
+    const response = await request(app).get("/api/users").expect(401);
+
+    expect(listUsersMock).not.toHaveBeenCalled();
+    expect(response.body).toEqual({
+      message: "Missing or invalid authorization header",
+    });
+  });
+
+  it("lists users when authenticated", async () => {
+    const users = [{ id: 1, name: "Sample User", username: "sample" }];
+    getCurrentSessionMock.mockResolvedValueOnce({
+      expiresAt: new Date().toISOString(),
+      user: users[0],
+    });
+    listUsersMock.mockResolvedValueOnce(users);
+
+    const response = await request(app)
+      .get("/api/users")
+      .set("Authorization", "Bearer test-token")
+      .expect(200);
+
+    expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
+    expect(listUsersMock).toHaveBeenCalledWith(1, 10);
+    expect(response.body).toEqual(users);
+  });
+
+  it("rejects GET /api/users/:id when not authenticated", async () => {
+    const response = await request(app).get("/api/users/1").expect(401);
+
+    expect(getUserByIdMock).not.toHaveBeenCalled();
+    expect(response.body).toEqual({
+      message: "Missing or invalid authorization header",
+    });
+  });
+
+  it("gets one user when authenticated", async () => {
+    const user = { id: 1, name: "Sample User", username: "sample" };
+    getCurrentSessionMock.mockResolvedValueOnce({
+      expiresAt: new Date().toISOString(),
+      user,
+    });
+    getUserByIdMock.mockResolvedValueOnce(user);
+
+    const response = await request(app)
+      .get("/api/users/1")
+      .set("Authorization", "Bearer test-token")
+      .expect(200);
+
+    expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
+    expect(getUserByIdMock).toHaveBeenCalledWith(1);
+    expect(response.body).toEqual(user);
   });
 });
