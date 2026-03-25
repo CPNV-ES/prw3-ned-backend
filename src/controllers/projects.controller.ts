@@ -4,6 +4,11 @@ import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
 import { createForbiddenError } from "../utils/http-error";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
+import {
+  buildDefaultProjectImageUrl,
+  buildProjectImageUrl,
+  deleteStoredProjectImage,
+} from "../utils/project-images";
 
 async function index(
   req: Request,
@@ -117,20 +122,18 @@ async function store(
   next: NextFunction,
 ): Promise<void> {
   const authenticatedReq = req as AuthenticatedRequest;
-  const { title, summary, demo_url, repository_url, image_url } = req.body;
+  const { title, summary, demo_url, repository_url } = req.body;
   const currentUserId = authenticatedReq.currentUser?.id;
+  const uploadedFile = req.file;
 
-  if (
-    !title ||
-    !summary ||
-    !demo_url ||
-    !repository_url ||
-    !image_url ||
-    !currentUserId
-  ) {
+  if (!title || !summary || !demo_url || !repository_url || !currentUserId) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
+
+  const image_url = uploadedFile
+    ? buildProjectImageUrl(req, uploadedFile.filename)
+    : buildDefaultProjectImageUrl(req);
 
   try {
     const newProject = await projectsService.create({
@@ -144,6 +147,9 @@ async function store(
 
     res.status(201).json(newProject);
   } catch (error) {
+    if (uploadedFile) {
+      await deleteStoredProjectImage(image_url);
+    }
     next(error);
   }
 }
@@ -155,7 +161,9 @@ async function update(
 ): Promise<void> {
   const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const { title, summary, demo_url, repository_url, image_url } = req.body;
+  const { title, summary, demo_url, repository_url } = req.body;
+  const uploadedFile = req.file;
+  let newImageUrl: string | null = null;
 
   try {
     const existingProject = await projectsService.getById(projectId);
@@ -169,17 +177,30 @@ async function update(
       throw createForbiddenError("You can only modify your own projects");
     }
 
+    newImageUrl = uploadedFile
+      ? buildProjectImageUrl(req, uploadedFile.filename)
+      : null;
+    const image_url = newImageUrl ? newImageUrl : existingProject.image_url;
+
     const updatedProject = await projectsService.update(projectId, {
-      title,
-      summary,
-      demo_url,
-      repository_url,
+      title: title ?? existingProject.title,
+      summary: summary ?? existingProject.summary,
+      demo_url: demo_url ?? existingProject.demo_url,
+      repository_url: repository_url ?? existingProject.repository_url,
       image_url,
       author_id: existingProject.author_id,
     });
 
+    if (uploadedFile && image_url !== existingProject.image_url) {
+      await deleteStoredProjectImage(existingProject.image_url);
+    }
+
     res.status(200).json(updatedProject);
   } catch (error) {
+    if (newImageUrl) {
+      await deleteStoredProjectImage(newImageUrl);
+    }
+
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
       return;

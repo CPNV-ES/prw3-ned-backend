@@ -1,6 +1,12 @@
 import request from "supertest";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import path from "path";
 
 import { ProjectNotFoundError } from "../../src/errors/projects/project-not-found.error";
+import {
+  DEFAULT_PROJECT_IMAGE_PUBLIC_PATH,
+  PROJECT_IMAGES_DIRECTORY,
+} from "../../src/utils/project-images";
 
 jest.mock("../../src/routes/users.routes", () => {
   const { Router } = jest.requireActual("express");
@@ -51,14 +57,31 @@ const createPayload = {
   summary: sampleProject.summary,
   demo_url: sampleProject.demo_url,
   repository_url: sampleProject.repository_url,
-  image_url: sampleProject.image_url,
 };
 
 const authHeader = { Authorization: "Bearer test-token" };
+const pngBuffer = Buffer.from(
+  "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c49444154789c6360000002000154a24f5a0000000049454e44ae426082",
+  "hex",
+);
+
+function buildMultipartProjectRequest(method: "post" | "put", url: string) {
+  return (
+    request(app)
+      // eslint-disable-next-line no-unexpected-multiline
+      [method](url)
+      .set(authHeader)
+      .field("title", createPayload.title)
+      .field("summary", createPayload.summary)
+      .field("demo_url", createPayload.demo_url)
+      .field("repository_url", createPayload.repository_url)
+  );
+}
 
 describe("Projects Functional API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mkdirSync(PROJECT_IMAGES_DIRECTORY, { recursive: true });
     getCurrentSessionMock.mockResolvedValue({
       expiresAt: new Date().toISOString(),
       user: { id: 42, name: "Test User", username: "test-user" },
@@ -208,29 +231,71 @@ describe("Projects Functional API", () => {
     expect(response.body).toEqual({ error: "Missing required fields" });
   });
 
-  it("POST /api/projects should create a project", async () => {
-    mockedProjectsService.create.mockResolvedValue(sampleProject);
+  it("POST /api/projects should use the default image when none is uploaded", async () => {
+    const response = await buildMultipartProjectRequest(
+      "post",
+      "/api/projects",
+    );
 
-    const response = await request(app)
-      .post("/api/projects")
-      .set(authHeader)
-      .send(createPayload);
-
-    expect(mockedProjectsService.create).toHaveBeenCalledWith({
-      ...createPayload,
-      author_id: 42,
-    });
+    expect(mockedProjectsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...createPayload,
+        author_id: 42,
+        image_url: expect.stringMatching(
+          new RegExp(
+            `^http://127\\.0\\.0\\.1:\\d+${DEFAULT_PROJECT_IMAGE_PUBLIC_PATH.replace(
+              /\//g,
+              "\\/",
+            )}$`,
+          ),
+        ),
+      }),
+    );
     expect(response.status).toBe(201);
-    expect(response.body).toEqual(sampleProject);
+  });
+
+  it("POST /api/projects should create a project", async () => {
+    mockedProjectsService.create.mockImplementation(async (payload) => ({
+      id: 1,
+      ...payload,
+    }));
+
+    const response = await buildMultipartProjectRequest(
+      "post",
+      "/api/projects",
+    ).attach("image", pngBuffer, {
+      filename: "project.png",
+      contentType: "image/png",
+    });
+
+    expect(mockedProjectsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...createPayload,
+        author_id: 42,
+        image_url: expect.stringMatching(
+          /^http:\/\/127\.0\.0\.1:\d+\/storages\/projects\/.+\.png$/,
+        ),
+      }),
+    );
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        title: sampleProject.title,
+        image_url: expect.stringContaining("/storages/projects/"),
+      }),
+    );
   });
 
   it("POST /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.create.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app)
-      .post("/api/projects")
-      .set(authHeader)
-      .send(createPayload);
+    const response = await buildMultipartProjectRequest(
+      "post",
+      "/api/projects",
+    ).attach("image", pngBuffer, {
+      filename: "project.png",
+      contentType: "image/png",
+    });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
@@ -238,7 +303,86 @@ describe("Projects Functional API", () => {
     );
   });
 
+  it("POST /api/projects should reject unsupported image types", async () => {
+    const response = await buildMultipartProjectRequest(
+      "post",
+      "/api/projects",
+    ).attach("image", Buffer.from("not-an-image"), {
+      filename: "notes.txt",
+      contentType: "text/plain",
+    });
+
+    expect(mockedProjectsService.create).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: "Only jpg, png, and webp images are allowed",
+    });
+  });
+
+  it("POST /api/projects should reject images larger than the limit", async () => {
+    const response = await buildMultipartProjectRequest(
+      "post",
+      "/api/projects",
+    ).attach("image", Buffer.alloc(5 * 1024 * 1024 + 1), {
+      filename: "large.png",
+      contentType: "image/png",
+    });
+
+    expect(mockedProjectsService.create).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: `Image exceeds max size of ${5 * 1024 * 1024} bytes`,
+    });
+  });
+
   it("PUT /api/projects/:id should update a project", async () => {
+    const oldFilename = "old-image.png";
+    const oldImagePath = path.join(PROJECT_IMAGES_DIRECTORY, oldFilename);
+    writeFileSync(oldImagePath, pngBuffer);
+    mockedProjectsService.getById.mockResolvedValue({
+      ...sampleProject,
+      image_url: `http://127.0.0.1/storages/projects/${oldFilename}`,
+    });
+    mockedProjectsService.update.mockImplementation(async (id, payload) => ({
+      id,
+      ...payload,
+    }));
+
+    const response = await request(app)
+      .put("/api/projects/1")
+      .set(authHeader)
+      .field("title", "Updated")
+      .field("summary", createPayload.summary)
+      .field("demo_url", createPayload.demo_url)
+      .field("repository_url", createPayload.repository_url)
+      .attach("image", pngBuffer, {
+        filename: "updated.png",
+        contentType: "image/png",
+      });
+
+    expect(mockedProjectsService.getById).toHaveBeenCalledWith(1);
+    expect(mockedProjectsService.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        ...createPayload,
+        title: "Updated",
+        author_id: sampleProject.author_id,
+        image_url: expect.stringMatching(
+          /^http:\/\/127\.0\.0\.1:\d+\/storages\/projects\/.+\.png$/,
+        ),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        title: "Updated",
+        image_url: expect.stringContaining("/storages/projects/"),
+      }),
+    );
+    expect(existsSync(oldImagePath)).toBe(false);
+  });
+
+  it("PUT /api/projects/:id should keep the current image when no new file is sent", async () => {
     const updatedProject = { ...sampleProject, title: "Updated" };
     mockedProjectsService.getById.mockResolvedValue(sampleProject);
     mockedProjectsService.update.mockResolvedValue(updatedProject);
@@ -246,16 +390,17 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .put("/api/projects/1")
       .set(authHeader)
-      .send({ ...createPayload, title: "Updated", author_id: 999 });
+      .send({ title: "Updated" });
 
-    expect(mockedProjectsService.getById).toHaveBeenCalledWith(1);
     expect(mockedProjectsService.update).toHaveBeenCalledWith(1, {
-      ...createPayload,
       title: "Updated",
+      summary: sampleProject.summary,
+      demo_url: sampleProject.demo_url,
+      repository_url: sampleProject.repository_url,
+      image_url: sampleProject.image_url,
       author_id: sampleProject.author_id,
     });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(updatedProject);
   });
 
   it("PUT /api/projects/:id should return 404 for missing project", async () => {

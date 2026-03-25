@@ -67,7 +67,6 @@ const openApiSpec = {
                   "summary",
                   "demo_url",
                   "repository_url",
-                  "image_url",
                   "tags",
                 ],
               },
