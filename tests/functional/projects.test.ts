@@ -12,6 +12,12 @@ jest.mock("../../src/routes/sessions.routes", () => {
   return { __esModule: true, default: Router() };
 });
 
+const getCurrentSessionMock = jest.fn();
+
+jest.mock("../../src/services/sessions.service", () => ({
+  getCurrentSession: getCurrentSessionMock,
+}));
+
 jest.mock("../../src/services/projects.service", () => ({
   projectsService: {
     getAll: jest.fn(),
@@ -49,15 +55,31 @@ const createPayload = {
   author_id: sampleProject.author_id,
 };
 
+const authHeader = { Authorization: "Bearer test-token" };
+
 describe("Projects Functional API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getCurrentSessionMock.mockResolvedValue({
+      expiresAt: new Date().toISOString(),
+      user: { id: 1, name: "Test User", username: "test-user" },
+    });
+  });
+
+  it("rejects GET /api/projects when not authenticated", async () => {
+    const response = await request(app).get("/api/projects");
+
+    expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Missing or invalid authorization header",
+    });
   });
 
   it("GET /api/projects should return project list", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get("/api/projects");
+    const response = await request(app).get("/api/projects").set(authHeader);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([sampleProject]);
@@ -66,7 +88,7 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.getAll.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).get("/api/projects");
+    const response = await request(app).get("/api/projects").set(authHeader);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
@@ -77,7 +99,9 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should pass name filter to service", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get("/api/projects?name=Port");
+    const response = await request(app)
+      .get("/api/projects?name=Port")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({ name: "Port" });
     expect(response.status).toBe(200);
@@ -86,7 +110,9 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should pass tags filter to service", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get("/api/projects?tags=react,node");
+    const response = await request(app)
+      .get("/api/projects?tags=react,node")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       tags: ["react", "node"],
@@ -97,9 +123,9 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should pass ordering to service", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get(
-      "/api/projects?sortBy=likes&order=asc",
-    );
+    const response = await request(app)
+      .get("/api/projects?sortBy=likes&order=asc")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       sortBy: "likes",
@@ -111,7 +137,9 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should default order to desc when sorting", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get("/api/projects?sortBy=date");
+    const response = await request(app)
+      .get("/api/projects?sortBy=date")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       sortBy: "date",
@@ -121,7 +149,9 @@ describe("Projects Functional API", () => {
   });
 
   it("GET /api/projects should return 400 for invalid sortBy", async () => {
-    const response = await request(app).get("/api/projects?sortBy=wat");
+    const response = await request(app)
+      .get("/api/projects?sortBy=wat")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
     expect(response.status).toBe(400);
@@ -129,9 +159,9 @@ describe("Projects Functional API", () => {
   });
 
   it("GET /api/projects should return 400 for invalid order", async () => {
-    const response = await request(app).get(
-      "/api/projects?sortBy=likes&order=wat",
-    );
+    const response = await request(app)
+      .get("/api/projects?sortBy=likes&order=wat")
+      .set(authHeader);
 
     expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
     expect(response.status).toBe(400);
@@ -141,7 +171,7 @@ describe("Projects Functional API", () => {
   it("GET /api/projects/:id should return one project", async () => {
     mockedProjectsService.getById.mockResolvedValue(sampleProject);
 
-    const response = await request(app).get("/api/projects/1");
+    const response = await request(app).get("/api/projects/1").set(authHeader);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(sampleProject);
@@ -150,7 +180,9 @@ describe("Projects Functional API", () => {
   it("GET /api/projects/:id should return 404 for missing project", async () => {
     mockedProjectsService.getById.mockResolvedValue(null);
 
-    const response = await request(app).get("/api/projects/999");
+    const response = await request(app)
+      .get("/api/projects/999")
+      .set(authHeader);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -159,7 +191,7 @@ describe("Projects Functional API", () => {
   it("GET /api/projects/:id should return 500 on unexpected service error", async () => {
     mockedProjectsService.getById.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).get("/api/projects/1");
+    const response = await request(app).get("/api/projects/1").set(authHeader);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
@@ -170,6 +202,7 @@ describe("Projects Functional API", () => {
   it("POST /api/projects should return 400 when required fields are missing", async () => {
     const response = await request(app)
       .post("/api/projects")
+      .set(authHeader)
       .send({ title: "Only title" });
 
     expect(response.status).toBe(400);
@@ -181,6 +214,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .post("/api/projects")
+      .set(authHeader)
       .send(createPayload);
 
     expect(response.status).toBe(201);
@@ -192,6 +226,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .post("/api/projects")
+      .set(authHeader)
       .send(createPayload);
 
     expect(response.status).toBe(500);
@@ -206,6 +241,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .put("/api/projects/1")
+      .set(authHeader)
       .send({ ...createPayload, title: "Updated" });
 
     expect(response.status).toBe(200);
@@ -217,6 +253,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .put("/api/projects/999")
+      .set(authHeader)
       .send(createPayload);
 
     expect(response.status).toBe(404);
@@ -228,6 +265,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .put("/api/projects/1")
+      .set(authHeader)
       .send(createPayload);
 
     expect(response.status).toBe(500);
@@ -240,7 +278,9 @@ describe("Projects Functional API", () => {
     const likedProject = { ...sampleProject, likes: 11 };
     mockedProjectsService.like.mockResolvedValue(likedProject);
 
-    const response = await request(app).post("/api/projects/1/like");
+    const response = await request(app)
+      .post("/api/projects/1/like")
+      .set(authHeader);
 
     expect(mockedProjectsService.like).toHaveBeenCalledWith(1);
     expect(response.status).toBe(200);
@@ -250,7 +290,9 @@ describe("Projects Functional API", () => {
   it("POST /api/projects/:id/like should return 500 on unexpected service error", async () => {
     mockedProjectsService.like.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).post("/api/projects/1/like");
+    const response = await request(app)
+      .post("/api/projects/1/like")
+      .set(authHeader);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
@@ -261,7 +303,9 @@ describe("Projects Functional API", () => {
   it("POST /api/projects/:id/like should return 404 for missing project", async () => {
     mockedProjectsService.like.mockRejectedValue(new ProjectNotFoundError());
 
-    const response = await request(app).post("/api/projects/999/like");
+    const response = await request(app)
+      .post("/api/projects/999/like")
+      .set(authHeader);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -270,7 +314,9 @@ describe("Projects Functional API", () => {
   it("DELETE /api/projects/:id should return 204", async () => {
     mockedProjectsService.destroy.mockResolvedValue();
 
-    const response = await request(app).delete("/api/projects/1");
+    const response = await request(app)
+      .delete("/api/projects/1")
+      .set(authHeader);
 
     expect(response.status).toBe(204);
     expect(response.body).toEqual({});
@@ -279,7 +325,9 @@ describe("Projects Functional API", () => {
   it("DELETE /api/projects/:id should return 404 for missing project", async () => {
     mockedProjectsService.destroy.mockRejectedValue(new ProjectNotFoundError());
 
-    const response = await request(app).delete("/api/projects/999");
+    const response = await request(app)
+      .delete("/api/projects/999")
+      .set(authHeader);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -288,7 +336,9 @@ describe("Projects Functional API", () => {
   it("DELETE /api/projects/:id should return 500 on unexpected service error", async () => {
     mockedProjectsService.destroy.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).delete("/api/projects/1");
+    const response = await request(app)
+      .delete("/api/projects/1")
+      .set(authHeader);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(

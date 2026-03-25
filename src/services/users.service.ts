@@ -33,3 +33,26 @@ export async function createUser({
     select: { id: true, name: true, username: true },
   });
 }
+
+export async function getUserById(userId: number): Promise<UserOutput | null> {
+  return prisma.users.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true },
+  });
+}
+
+export async function listUsers(
+  page: number,
+  limit: number,
+): Promise<UserOutput[]> {
+  const [users] = await prisma.$transaction([
+    prisma.users.findMany({
+      skip: (page - 1) * limit,
+      take: limit,
+      select: { id: true, name: true, username: true },
+    }),
+    prisma.users.count(),
+  ]);
+
+  return users;
+}

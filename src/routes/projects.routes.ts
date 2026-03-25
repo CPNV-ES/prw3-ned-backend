@@ -1,8 +1,11 @@
 import { Router } from "express";
 
 import { projectsController } from "../controllers/projects.controller";
+import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
+
+router.use("/projects", requireAuth);
 
 router.get("/projects", projectsController.index);
 router.get("/projects/:id", projectsController.show);
