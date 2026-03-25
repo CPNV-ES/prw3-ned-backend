@@ -1,5 +1,14 @@
 import request from "supertest";
-import { jest } from "@jest/globals";
+
+jest.mock("../../src/routes/users.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
+jest.mock("../../src/routes/projects.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
 
 const createSessionMock =
   jest.fn<
@@ -8,15 +17,13 @@ const createSessionMock =
 const getCurrentSessionMock = jest.fn<(token: string) => Promise<unknown>>();
 const revokeSessionTokenMock = jest.fn<(token: string) => Promise<void>>();
 
-jest.unstable_mockModule("../../src/services/sessions.service.js", () => ({
+jest.mock("../../src/services/sessions.service", () => ({
   createSession: createSessionMock,
   getCurrentSession: getCurrentSessionMock,
   revokeSessionToken: revokeSessionTokenMock,
 }));
 
-type AppModule = typeof import("../../src/app.js");
-
-let app: AppModule["app"];
+import { app } from "../../src/app";
 
 const sessionResponse = {
   token: "test-token",
@@ -30,10 +37,6 @@ const currentSessionResponse = {
 };
 
 describe("/api/sessions", () => {
-  beforeAll(async () => {
-    ({ app } = await import("../../src/app.js"));
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });

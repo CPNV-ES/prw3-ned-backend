@@ -1,28 +1,24 @@
 import request from "supertest";
-import { jest } from "@jest/globals";
 
-const createUserMock =
-  jest.fn<
-    (payload: {
-      name: string;
-      username: string;
-      password: string;
-    }) => Promise<unknown>
-  >();
+jest.mock("../../src/routes/sessions.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
 
-jest.unstable_mockModule("../../src/services/users.service.js", () => ({
+jest.mock("../../src/routes/projects.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
+const createUserMock = jest.fn();
+
+jest.mock("../../src/services/users.service", () => ({
   createUser: createUserMock,
 }));
 
-type AppModule = typeof import("../../src/app.js");
-
-let app: AppModule["app"];
+import { app } from "../../src/app";
 
 describe("POST /api/users", () => {
-  beforeAll(async () => {
-    ({ app } = await import("../../src/app.js"));
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });

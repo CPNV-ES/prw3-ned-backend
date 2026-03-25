@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { jest } from "@jest/globals";
 
 const upsertMock =
   jest.fn<
@@ -12,7 +11,7 @@ const upsertMock =
 const findUniqueMock =
   jest.fn<(args: { where: { token: string } }) => Promise<unknown>>();
 
-jest.unstable_mockModule("../../src/utils/prisma.js", () => ({
+jest.mock("../../src/utils/prisma", () => ({
   prisma: {
     revoked_tokens: {
       upsert: upsertMock,
@@ -21,21 +20,15 @@ jest.unstable_mockModule("../../src/utils/prisma.js", () => ({
   },
 }));
 
-type RevokedTokensServiceModule =
-  typeof import("../../src/services/revoked-tokens.service.js");
-
-let persistRevokedToken: RevokedTokensServiceModule["persistRevokedToken"];
-let isTokenRevoked: RevokedTokensServiceModule["isTokenRevoked"];
+import {
+  isTokenRevoked,
+  persistRevokedToken,
+} from "../../src/services/revoked-tokens.service";
 
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 describe("revoked-tokens service", () => {
-  beforeAll(async () => {
-    ({ persistRevokedToken, isTokenRevoked } =
-      await import("../../src/services/revoked-tokens.service.js"));
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });

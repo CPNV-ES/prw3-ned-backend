@@ -1,8 +1,5 @@
 import request from "supertest";
 
-const expectedStatus = { status: "ok", uptime: 123 };
-const getSystemStatusMock = jest.fn(() => ({ ...expectedStatus }));
-
 jest.mock("../../src/routes/users.routes", () => {
   const { Router } = jest.requireActual("express");
   return { __esModule: true, default: Router() };
@@ -18,21 +15,14 @@ jest.mock("../../src/routes/projects.routes", () => {
   return { __esModule: true, default: Router() };
 });
 
-jest.mock("../../src/services/health.service", () => ({
-  getSystemStatus: getSystemStatusMock,
-}));
-
 import { app } from "../../src/app";
 
-describe("GET /api/health", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+describe("Health Functional API", () => {
+  it("GET /api/health should return service status", async () => {
+    const response = await request(app).get("/api/health");
 
-  it("returns the current system status", async () => {
-    const response = await request(app).get("/api/health").expect(200);
-
-    expect(getSystemStatusMock).toHaveBeenCalledTimes(1);
-    expect(response.body).toEqual(expectedStatus);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.objectContaining({ status: "ok" }));
+    expect(typeof response.body.uptime).toBe("number");
   });
 });
