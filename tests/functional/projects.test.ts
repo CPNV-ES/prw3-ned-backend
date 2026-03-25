@@ -269,8 +269,10 @@ describe("Projects Functional API", () => {
 
   it("POST /api/projects should create a project", async () => {
     mockedProjectsService.create.mockImplementation(async (payload) => ({
-      id: 1,
       ...payload,
+      id: 1,
+      likes: 0,
+      author_name: sampleProject.author_name,
     }));
 
     const response = await buildMultipartProjectRequest(
@@ -484,8 +486,10 @@ describe("Projects Functional API", () => {
       image_url: `http://127.0.0.1/storages/projects/${oldFilename}`,
     });
     mockedProjectsService.update.mockImplementation(async (id, payload) => ({
-      id,
       ...payload,
+      id,
+      likes: sampleProject.likes,
+      author_name: sampleProject.author_name,
     }));
 
     const response = await request(app)
