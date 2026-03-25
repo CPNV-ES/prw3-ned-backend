@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 
 import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
-import { createForbiddenError } from "../utils/http-error";
+import { createForbiddenError, createUnauthorizedError } from "../utils/http-error";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import {
   buildDefaultProjectImageUrl,
@@ -179,10 +179,17 @@ async function commentsStore(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const { content, author_id } = req.body;
+  const { content } = req.body;
+  const currentUserId = authenticatedReq.currentUser?.id;
 
-  if (!content || !author_id) {
+  if (!currentUserId) {
+    next(createUnauthorizedError("Authentication required"));
+    return;
+  }
+
+  if (!content) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
@@ -190,7 +197,7 @@ async function commentsStore(
   try {
     const newComment = await projectsService.createComment(projectId, {
       content,
-      author_id,
+      author_id: currentUserId,
     });
 
     res.status(201).json(newComment);

@@ -392,7 +392,7 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .post("/api/projects/1/comments")
       .set(authHeader)
-      .send({ content: "Nice project" });
+      .send({});
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "Missing required fields" });
@@ -404,7 +404,7 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .post("/api/projects/1/comments")
       .set(authHeader)
-      .send({ content: "Nice project", author_id: 42 });
+      .send({ content: "Nice project", author_id: 999 });
 
     expect(mockedProjectsService.createComment).toHaveBeenCalledWith(1, {
       content: "Nice project",
@@ -425,7 +425,7 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .post("/api/projects/999/comments")
       .set(authHeader)
-      .send({ content: "Nice project", author_id: 42 });
+      .send({ content: "Nice project" });
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -437,7 +437,7 @@ describe("Projects Functional API", () => {
     const response = await request(app)
       .post("/api/projects/1/comments")
       .set(authHeader)
-      .send({ content: "Nice project", author_id: 42 });
+      .send({ content: "Nice project" });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
