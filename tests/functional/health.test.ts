@@ -1,14 +1,19 @@
 import request from "supertest";
 
-jest.mock("../../src/services/projects.service", () => ({
-  projectsService: {
-    getAll: jest.fn(),
-    getById: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    destroy: jest.fn(),
-  },
-}));
+jest.mock("../../src/routes/users.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
+jest.mock("../../src/routes/sessions.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
+jest.mock("../../src/routes/projects.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
 
 import { app } from "../../src/app";
 
