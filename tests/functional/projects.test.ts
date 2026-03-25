@@ -37,7 +37,10 @@ const sampleProject = {
   demo_url: "https://demo.example.com",
   repository_url: "https://github.com/example/repo",
   image_url: "https://images.example.com/p1.png",
+  likes: 0,
+  tags: ["react", "node"],
   author_id: 42,
+  author_name: "Alice",
 };
 
 const createPayload = {
@@ -187,6 +190,21 @@ describe("Projects Functional API", () => {
     expect(response.body).toEqual(sampleProject);
   });
 
+  it("POST /api/projects should accept tag names array and pass normalized tags to service", async () => {
+    mockedProjectsService.create.mockResolvedValue(sampleProject);
+
+    const response = await request(app)
+      .post("/api/projects")
+      .send({ ...createPayload, tags: ["api", " dev ", "lok", "dev"] });
+
+    expect(mockedProjectsService.create).toHaveBeenCalledWith({
+      ...createPayload,
+      tags: ["api", "dev", "lok", "dev"],
+    });
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(sampleProject);
+  });
+
   it("POST /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.create.mockRejectedValue(new Error("db fail"));
 
@@ -208,6 +226,22 @@ describe("Projects Functional API", () => {
       .put("/api/projects/1")
       .send({ ...createPayload, title: "Updated" });
 
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(updatedProject);
+  });
+
+  it("PUT /api/projects/:id should accept empty tags array and pass it to service", async () => {
+    const updatedProject = { ...sampleProject, tags: [] as string[] };
+    mockedProjectsService.update.mockResolvedValue(updatedProject);
+
+    const response = await request(app)
+      .put("/api/projects/1")
+      .send({ ...createPayload, tags: [] });
+
+    expect(mockedProjectsService.update).toHaveBeenCalledWith(1, {
+      ...createPayload,
+      tags: [],
+    });
     expect(response.status).toBe(200);
     expect(response.body).toEqual(updatedProject);
   });
