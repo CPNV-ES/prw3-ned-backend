@@ -15,10 +15,7 @@ export interface Project {
   author_name: string;
 }
 
-type ProjectWriteInput = Omit<
-  Project,
-  "id" | "author_name" | "likes"
->;
+type ProjectWriteInput = Omit<Project, "id" | "author_name" | "likes">;
 
 export interface ProjectsListOptions {
   name?: string;
@@ -72,9 +69,7 @@ type ProjectWithAuthor = Prisma.projectsGetPayload<{
 }>;
 
 function normalizeTags(tags: string[]): string[] {
-  return Array.from(
-    new Set(tags.map((tag) => tag.trim()).filter(Boolean)),
-  );
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
 }
 
 function mapProject(project: ProjectWithAuthor): Project {

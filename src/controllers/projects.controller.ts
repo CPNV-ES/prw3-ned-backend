@@ -173,7 +173,7 @@ async function update(
     repository_url,
     image_url,
     author_id,
-    tags 
+    tags,
   } = req.body;
 
   try {
@@ -184,7 +184,7 @@ async function update(
       repository_url,
       image_url,
       author_id,
-      tags
+      tags,
     });
 
     res.status(200).json(updatedProject);
