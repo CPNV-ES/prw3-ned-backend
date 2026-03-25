@@ -244,7 +244,7 @@ const openApiSpec = {
             },
           },
         ],
-                requestBody: {
+        requestBody: {
           required: true,
           content: {
             "application/json": {
@@ -253,11 +253,9 @@ const openApiSpec = {
                 properties: {
                   content: { type: "string" },
                   author_id: { type: "integer" },
+                  project_id: { type: "interger" },
                 },
-                required: [
-                  "content",
-                  "author_id",
-                ],
+                required: ["content", "author_id", "project_id"],
               },
             },
           },
