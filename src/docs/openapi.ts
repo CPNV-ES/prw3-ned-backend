@@ -247,11 +247,9 @@ const openApiSpec = {
                 properties: {
                   content: { type: "string" },
                   author_id: { type: "integer" },
+                  project_id: { type: "integer" },
                 },
-                required: [
-                  "content",
-                  "author_id",
-                ],
+                required: ["content", "author_id", "project_id"],
               },
             },
           },
@@ -266,7 +264,6 @@ const openApiSpec = {
         },
       },
     },
-    
   },
 };
 
