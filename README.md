@@ -28,9 +28,16 @@ npm run dev
 
 ### On integration environment
 
-1. Copy `.env.example` to `.env`.
-2. Replace `DATABASE_PASSWORD`, `DATABASE_ROOT_PASSWORD`, and `JWT_SECRET` with real secrets.
-3. Start the stack:
+This repository includes a Docker Compose setup in `examples/productions-setup` for a production-like deployment of the API and its MySQL database.
+
+1. Copy `examples/productions-setup/.env.example` to `examples/productions-setup/.env`.
+2. Set real values for:
+   - `DATABASE_ROOT_PASSWORD`
+   - `DATABASE_NAME`
+   - `DATABASE_USER`
+   - `DATABASE_PASSWORD`
+   - `JWT_SECRET`
+3. Start the stack from the repository root:
 
 ```bash
 docker compose -f examples/productions-setup/docker-compose.yaml up -d --build
@@ -39,7 +46,7 @@ docker compose -f examples/productions-setup/docker-compose.yaml up -d --build
 The compose stack includes:
 
 - `db`: MySQL 8.4 with persistent storage and a health check
-- `app`: the production Node.js container with restart policy, startup Prisma migrations, health check, and persistent project image storage
+- `app`: the production Node.js container, built from this repository, with restart policy, `prisma migrate deploy` on startup, a health check, and persistent project image storage
 
 Useful commands:
 
@@ -52,7 +59,9 @@ docker compose -f examples/productions-setup/docker-compose.yaml down
 Notes:
 
 - Only the API port is published by default. The database stays on the internal Docker network.
-- Uploaded project images are stored in the `project_storage` named volume.
+- The API is exposed on `APP_PORT` from `examples/productions-setup/.env` and defaults to `3000`.
+- Uploaded project images are stored in `examples/productions-setup/data/projects`.
+- MySQL data is stored in `examples/productions-setup/data/mysql`.
 - In a real public deployment, place a reverse proxy or load balancer in front of the `app` service for TLS termination.
 
 ## Directory structure
