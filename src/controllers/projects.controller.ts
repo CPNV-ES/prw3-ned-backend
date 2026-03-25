@@ -114,8 +114,22 @@ async function store(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const { title, summary, demo_url, repository_url, image_url, author_id } =
-    req.body;
+  const {
+    title,
+    summary,
+    demo_url,
+    repository_url,
+    image_url,
+    author_id,
+    tags,
+  } = req.body;
+
+  const normalizedTags = Array.isArray(tags)
+    ? tags
+        .filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
 
   if (
     !title ||
@@ -137,6 +151,7 @@ async function store(
       repository_url,
       image_url,
       author_id,
+      tags: normalizedTags,
     });
 
     res.status(201).json(newProject);
@@ -151,8 +166,15 @@ async function update(
   next: NextFunction,
 ): Promise<void> {
   const projectId = parseInt(req.params.id as string, 10);
-  const { title, summary, demo_url, repository_url, image_url, author_id } =
-    req.body;
+  const {
+    title,
+    summary,
+    demo_url,
+    repository_url,
+    image_url,
+    author_id,
+    tags 
+  } = req.body;
 
   try {
     const updatedProject = await projectsService.update(projectId, {
@@ -162,6 +184,7 @@ async function update(
       repository_url,
       image_url,
       author_id,
+      tags
     });
 
     res.status(200).json(updatedProject);
