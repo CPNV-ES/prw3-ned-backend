@@ -36,6 +36,24 @@ model projects {
 
   author users @relation(fields: [author_id], references: [id])
   comments comments[]
+  tags projects_tags[]
+}
+
+model projects_tags {
+  project_id Int
+  tag_id Int
+
+  project projects @relation(fields: [project_id], references: [id])
+  tag tags @relation(fields: [tag_id], references: [id])
+
+  @@id([project_id, tag_id])
+}
+
+model tags {
+  id Int @id @default(autoincrement())
+  name String @unique
+
+  projects projects_tags[]
 }
 
 model comments {

@@ -1,30 +1,24 @@
 import express from "express";
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from "swagger-ui-express";
 
 import { port } from "./config/env";
 import errorHandler from "./middlewares/errorHandler";
 import healthRoutes from "./routes/health.routes";
-
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'PRW3 - Demo Deck API',
-      version: '1.0.0',
-    },
-  },
-  apis: ['./src/routes/*.ts'],
-};
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
+import projectsRoutes from "./routes/projects.routes";
+import openApiSpec from "./docs/openapi";
 
 const app = express();
 app.use(express.json());
 app.use("/api", healthRoutes);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+app.use("/api", projectsRoutes);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
+
+export { app };
