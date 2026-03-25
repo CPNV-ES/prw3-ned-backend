@@ -205,6 +205,68 @@ const openApiSpec = {
         },
       },
     },
+    "/api/projects/{id}/comments": {
+      get: {
+        tags: ["Projects"],
+        summary: "Get all comments of a project",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of comments of this project",
+          },
+        },
+      },
+      post: {
+        tags: ["Projects"],
+        summary: "Post a comment on a project",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  content: { type: "string" },
+                  author_id: { type: "integer" },
+                },
+                required: [
+                  "content",
+                  "author_id",
+                ],
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Project commented successfully",
+          },
+          "404": {
+            description: "Project not found",
+          },
+        },
+      },
+    },
+    
   },
 };
 
