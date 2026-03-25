@@ -9,7 +9,10 @@ export interface Project {
   demo_url: string;
   repository_url: string;
   image_url: string;
+  likes: number;
+  tags: string[];
   author_id: number;
+  author_name: string;
 }
 
 export interface Comment {
@@ -19,6 +22,8 @@ export interface Comment {
   author_id: number;
   project_id: number;
 }
+
+type ProjectWriteInput = Omit<Project, "id" | "author_name" | "likes">;
 
 export interface ProjectsListOptions {
   name?: string;
@@ -42,10 +47,61 @@ async function run<T>(functionToRun: () => Promise<T>): Promise<T> {
   }
 }
 
+const projectSelect = {
+  id: true,
+  title: true,
+  summary: true,
+  demo_url: true,
+  repository_url: true,
+  image_url: true,
+  likes: true,
+  author_id: true,
+  author: {
+    select: {
+      name: true,
+    },
+  },
+  tags: {
+    select: {
+      tag: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.projectsSelect;
+
+type ProjectWithAuthor = Prisma.projectsGetPayload<{
+  select: typeof projectSelect;
+}>;
+
+function normalizeTags(tags: string[]): string[] {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
+
+function mapProject(project: ProjectWithAuthor): Project {
+  return {
+    id: project.id,
+    title: project.title,
+    summary: project.summary,
+    demo_url: project.demo_url,
+    repository_url: project.repository_url,
+    image_url: project.image_url,
+    likes: project.likes,
+    tags: project.tags.map((projectTag) => projectTag.tag.name),
+    author_id: project.author_id,
+    author_name: project.author.name,
+  };
+}
+
 async function getAll(options?: ProjectsListOptions): Promise<Project[]> {
   return run(async () => {
     if (!options) {
-      return prisma.projects.findMany();
+      const projects = await prisma.projects.findMany({
+        select: projectSelect,
+      });
+      return projects.map(mapProject);
     }
 
     const where: Prisma.projectsWhereInput = {};
@@ -80,31 +136,66 @@ async function getAll(options?: ProjectsListOptions): Promise<Project[]> {
         : ({ created_at: order } as const);
     })();
 
-    const args: Prisma.projectsFindManyArgs = {};
-    if (Object.keys(where).length > 0) {
-      args.where = where;
-    }
-    if (orderBy) {
-      args.orderBy = orderBy;
-    }
+    const args = {
+      select: projectSelect,
+      ...(Object.keys(where).length > 0 ? { where } : {}),
+      ...(orderBy ? { orderBy } : {}),
+    } satisfies Prisma.projectsFindManyArgs;
 
-    return prisma.projects.findMany(args);
+    const projects = await prisma.projects.findMany(args);
+    return projects.map(mapProject);
   });
 }
 
 async function getById(projectId: number): Promise<Project | null> {
   return run(async () => {
-    return prisma.projects.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: projectId },
+      select: projectSelect,
     });
+
+    if (!project) {
+      return null;
+    }
+
+    return mapProject(project);
   });
 }
 
-async function create(project: Omit<Project, "id">): Promise<Project> {
+async function create(project: ProjectWriteInput): Promise<Project> {
   return run(async () => {
-    return prisma.projects.create({
-      data: project,
+    const { author_id, tags = [], ...projectData } = project;
+    const normalizedTags = normalizeTags(tags);
+
+    const data = {
+      ...projectData,
+      author: {
+        connect: {
+          id: author_id,
+        },
+      },
+      ...(normalizedTags.length > 0
+        ? {
+            tags: {
+              create: normalizedTags.map((tagName) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tagName },
+                    create: { name: tagName },
+                  },
+                },
+              })),
+            },
+          }
+        : {}),
+    } satisfies Prisma.projectsCreateInput;
+
+    const createdProject = await prisma.projects.create({
+      data,
+      select: projectSelect,
     });
+
+    return mapProject(createdProject);
   });
 }
 
@@ -149,13 +240,74 @@ async function createComment(
 
 async function update(
   projectId: number,
-  project: Omit<Project, "id">,
+  project: ProjectWriteInput,
 ): Promise<Project> {
   return run(async () => {
-    return prisma.projects.update({
-      where: { id: projectId },
-      data: project,
+    const { author_id, tags, ...projectData } = project;
+    const baseData = {
+      ...projectData,
+      author: {
+        connect: {
+          id: author_id,
+        },
+      },
+    } satisfies Prisma.projectsUpdateInput;
+
+    if (!Array.isArray(tags)) {
+      const updatedProject = await prisma.projects.update({
+        where: { id: projectId },
+        data: baseData,
+        select: projectSelect,
+      });
+
+      return mapProject(updatedProject);
+    }
+
+    const normalizedTags = normalizeTags(tags);
+
+    const updatedProject = await prisma.$transaction(async (tx) => {
+      await tx.projects.update({
+        where: { id: projectId },
+        data: {
+          ...baseData,
+          tags: {
+            deleteMany: {},
+          },
+        },
+      });
+
+      if (normalizedTags.length === 0) {
+        const projectWithoutTags = await tx.projects.findUnique({
+          where: { id: projectId },
+          select: projectSelect,
+        });
+
+        if (!projectWithoutTags) {
+          throw new ProjectNotFoundError();
+        }
+
+        return projectWithoutTags;
+      }
+
+      return tx.projects.update({
+        where: { id: projectId },
+        data: {
+          tags: {
+            create: normalizedTags.map((tagName) => ({
+              tag: {
+                connectOrCreate: {
+                  where: { name: tagName },
+                  create: { name: tagName },
+                },
+              },
+            })),
+          },
+        },
+        select: projectSelect,
+      });
     });
+
+    return mapProject(updatedProject);
   });
 }
 
@@ -163,16 +315,22 @@ async function like(projectId: number): Promise<Project> {
   return run(async () => {
     const project = await prisma.projects.findUnique({
       where: { id: projectId },
+      select: {
+        likes: true,
+      },
     });
 
     if (!project) {
       throw new ProjectNotFoundError();
     }
 
-    return prisma.projects.update({
+    const likedProject = await prisma.projects.update({
       where: { id: projectId },
       data: { likes: (project.likes || 0) + 1 },
+      select: projectSelect,
     });
+
+    return mapProject(likedProject);
   });
 }
 

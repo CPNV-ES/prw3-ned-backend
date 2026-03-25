@@ -2,7 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 
 import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
-import { createForbiddenError, createUnauthorizedError } from "../utils/http-error";
+import {
+  createForbiddenError,
+  createUnauthorizedError,
+} from "../utils/http-error";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import {
   buildDefaultProjectImageUrl,
@@ -122,9 +125,16 @@ async function store(
   next: NextFunction,
 ): Promise<void> {
   const authenticatedReq = req as AuthenticatedRequest;
-  const { title, summary, demo_url, repository_url } = req.body;
   const currentUserId = authenticatedReq.currentUser?.id;
   const uploadedFile = req.file;
+  const { title, summary, demo_url, repository_url, tags } = req.body;
+
+  const normalizedTags = Array.isArray(tags)
+    ? tags
+        .filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
 
   if (!title || !summary || !demo_url || !repository_url || !currentUserId) {
     res.status(400).json({ error: "Missing required fields" });
@@ -143,6 +153,7 @@ async function store(
       repository_url,
       image_url,
       author_id: currentUserId,
+      tags: normalizedTags,
     });
 
     res.status(201).json(newProject);
@@ -218,9 +229,9 @@ async function update(
 ): Promise<void> {
   const authenticatedReq = req as AuthenticatedRequest;
   const projectId = parseInt(req.params.id as string, 10);
-  const { title, summary, demo_url, repository_url } = req.body;
   const uploadedFile = req.file;
   let newImageUrl: string | null = null;
+  const { title, summary, demo_url, repository_url, tags } = req.body;
 
   try {
     const existingProject = await projectsService.getById(projectId);
@@ -246,6 +257,7 @@ async function update(
       repository_url: repository_url ?? existingProject.repository_url,
       image_url,
       author_id: existingProject.author_id,
+      tags,
     });
 
     if (uploadedFile && image_url !== existingProject.image_url) {

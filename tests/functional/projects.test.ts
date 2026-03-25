@@ -51,7 +51,10 @@ const sampleProject = {
   demo_url: "https://demo.example.com",
   repository_url: "https://github.com/example/repo",
   image_url: "https://images.example.com/p1.png",
+  likes: 0,
+  tags: ["react", "node"],
   author_id: 42,
+  author_name: "Alice",
 };
 
 const createPayload = {
@@ -296,6 +299,33 @@ describe("Projects Functional API", () => {
     );
   });
 
+  it("POST /api/projects should accept tag names array and pass normalized tags to service", async () => {
+    mockedProjectsService.create.mockResolvedValue(sampleProject);
+
+    const response = await request(app)
+      .post("/api/projects")
+      .set(authHeader)
+      .send({ ...createPayload, tags: ["api", " dev ", "lok", "dev"] });
+
+    expect(mockedProjectsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...createPayload,
+        author_id: 42,
+        image_url: expect.stringMatching(
+          new RegExp(
+            `^http://127\\.0\\.0\\.1:\\d+${DEFAULT_PROJECT_IMAGE_PUBLIC_PATH.replace(
+              /\//g,
+              "\\/",
+            )}$`,
+          ),
+        ),
+        tags: ["api", "dev", "lok", "dev"],
+      }),
+    );
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(sampleProject);
+  });
+
   it("POST /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.create.mockRejectedValue(new Error("db fail"));
 
@@ -511,6 +541,26 @@ describe("Projects Functional API", () => {
       author_id: sampleProject.author_id,
     });
     expect(response.status).toBe(200);
+  });
+
+  it("PUT /api/projects/:id should accept empty tags array and pass it to service", async () => {
+    const updatedProject = { ...sampleProject, tags: [] as string[] };
+    mockedProjectsService.getById.mockResolvedValue(sampleProject);
+    mockedProjectsService.update.mockResolvedValue(updatedProject);
+
+    const response = await request(app)
+      .put("/api/projects/1")
+      .set(authHeader)
+      .send({ ...createPayload, tags: [] });
+
+    expect(mockedProjectsService.update).toHaveBeenCalledWith(1, {
+      ...createPayload,
+      image_url: sampleProject.image_url,
+      author_id: sampleProject.author_id,
+      tags: [],
+    });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(updatedProject);
   });
 
   it("PUT /api/projects/:id should return 404 for missing project", async () => {
