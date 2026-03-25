@@ -3,5 +3,8 @@
 node_modules
 dist
 coverage
+tests
+storages
+scripts
 .env
 .DS_Store

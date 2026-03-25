@@ -28,7 +28,32 @@ npm run dev
 
 ### On integration environment
 
-TODO
+1. Copy `.env.example` to `.env`.
+2. Replace `DATABASE_PASSWORD`, `DATABASE_ROOT_PASSWORD`, and `JWT_SECRET` with real secrets.
+3. Start the stack:
+
+```bash
+docker compose -f examples/productions-setup/docker-compose.yaml up -d --build
+```
+
+The compose stack includes:
+
+- `db`: MySQL 8.4 with persistent storage and a health check
+- `app`: the production Node.js container with restart policy, startup Prisma migrations, health check, and persistent project image storage
+
+Useful commands:
+
+```bash
+docker compose -f examples/productions-setup/docker-compose.yaml logs -f app
+docker compose -f examples/productions-setup/docker-compose.yaml ps
+docker compose -f examples/productions-setup/docker-compose.yaml down
+```
+
+Notes:
+
+- Only the API port is published by default. The database stays on the internal Docker network.
+- Uploaded project images are stored in the `project_storage` named volume.
+- In a real public deployment, place a reverse proxy or load balancer in front of the `app` service for TLS termination.
 
 ## Directory structure
 
