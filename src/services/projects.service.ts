@@ -15,6 +15,14 @@ export interface Project {
   author_name: string;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  created_at: Date;
+  author_id: number;
+  project_id: number;
+}
+
 type ProjectWriteInput = Omit<Project, "id" | "author_name" | "likes">;
 
 export interface ProjectsListOptions {
@@ -191,6 +199,45 @@ async function create(project: ProjectWriteInput): Promise<Project> {
   });
 }
 
+async function getComments(projectId: number): Promise<Comment[]> {
+  return run(async () => {
+    const project = await prisma.projects.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new ProjectNotFoundError();
+    }
+
+    return prisma.comments.findMany({
+      where: { project_id: projectId },
+      orderBy: { created_at: "desc" },
+    });
+  });
+}
+
+async function createComment(
+  projectId: number,
+  comment: Omit<Comment, "id" | "created_at" | "project_id">,
+): Promise<Comment> {
+  return run(async () => {
+    const project = await prisma.projects.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new ProjectNotFoundError();
+    }
+
+    return prisma.comments.create({
+      data: {
+        ...comment,
+        project_id: projectId,
+      },
+    });
+  });
+}
+
 async function update(
   projectId: number,
   project: ProjectWriteInput,
@@ -299,6 +346,8 @@ export const projectsService = {
   getAll,
   getById,
   create,
+  getComments,
+  createComment,
   update,
   like,
   destroy,

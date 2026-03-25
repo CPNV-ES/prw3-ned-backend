@@ -160,6 +160,56 @@ async function store(
   }
 }
 
+async function commentsIndex(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const projectId = parseInt(req.params.id as string, 10);
+
+  try {
+    const comments = await projectsService.getComments(projectId);
+    res.status(200).json(comments);
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+
+    next(error);
+  }
+}
+
+async function commentsStore(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const projectId = parseInt(req.params.id as string, 10);
+  const { content, author_id } = req.body;
+
+  if (!content || !author_id) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  try {
+    const newComment = await projectsService.createComment(projectId, {
+      content,
+      author_id,
+    });
+
+    res.status(201).json(newComment);
+  } catch (error) {
+    if (error instanceof ProjectNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+
+    next(error);
+  }
+}
+
 async function update(
   req: Request,
   res: Response,
@@ -242,6 +292,8 @@ export const projectsController = {
   index,
   show,
   store,
+  commentsIndex,
+  commentsStore,
   update,
   like,
   destroy,

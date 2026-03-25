@@ -7,6 +7,10 @@ const prismaMock = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  comments: {
+    findMany: jest.fn(),
+    create: jest.fn(),
+  },
 };
 
 class MockPrismaClientKnownRequestError extends Error {
@@ -96,6 +100,14 @@ const createPayload = {
   image_url: sampleProject.image_url,
   author_id: sampleProject.author_id,
   tags: sampleProject.tags,
+};
+
+const sampleComment = {
+  id: 1,
+  content: "Nice project",
+  created_at: new Date("2026-03-25T09:00:00.000Z"),
+  author_id: 42,
+  project_id: 1,
 };
 
 describe("Projects Service", () => {
@@ -258,6 +270,63 @@ describe("Projects Service", () => {
       select: expectedProjectSelect,
     });
     expect(result).toEqual(sampleProject);
+  });
+
+  it("getComments should return project comments ordered by newest first", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(sampleProject);
+    prismaMock.comments.findMany.mockResolvedValue([sampleComment]);
+
+    const result = await projectsService.getComments(1);
+
+    expect(prismaMock.projects.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+    });
+    expect(prismaMock.comments.findMany).toHaveBeenCalledWith({
+      where: { project_id: 1 },
+      orderBy: { created_at: "desc" },
+    });
+    expect(result).toEqual([sampleComment]);
+  });
+
+  it("getComments should throw ProjectNotFoundError when project does not exist", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(null);
+
+    await expect(projectsService.getComments(999)).rejects.toBeInstanceOf(
+      ProjectNotFoundError,
+    );
+  });
+
+  it("createComment should persist and return comment", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(sampleProject);
+    prismaMock.comments.create.mockResolvedValue(sampleComment);
+
+    const result = await projectsService.createComment(1, {
+      content: "Nice project",
+      author_id: 42,
+    });
+
+    expect(prismaMock.projects.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+    });
+    expect(prismaMock.comments.create).toHaveBeenCalledWith({
+      data: {
+        content: "Nice project",
+        author_id: 42,
+        project_id: 1,
+      },
+    });
+    expect(result).toEqual(sampleComment);
+  });
+
+  it("createComment should throw ProjectNotFoundError when project does not exist", async () => {
+    prismaMock.projects.findUnique.mockResolvedValue(null);
+
+    await expect(
+      projectsService.createComment(999, {
+        content: "Nice project",
+        author_id: 42,
+      }),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
   });
 
   it("create should create missing tags and connect existing ones", async () => {
