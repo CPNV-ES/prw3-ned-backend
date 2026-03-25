@@ -2,6 +2,16 @@ import request from "supertest";
 
 import { ProjectNotFoundError } from "../../src/errors/projects/project-not-found.error";
 
+jest.mock("../../src/routes/users.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
+jest.mock("../../src/routes/sessions.routes", () => {
+  const { Router } = jest.requireActual("express");
+  return { __esModule: true, default: Router() };
+});
+
 jest.mock("../../src/services/projects.service", () => ({
   projectsService: {
     getAll: jest.fn(),

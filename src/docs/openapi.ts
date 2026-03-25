@@ -11,6 +11,12 @@ const openApiSpec = {
     {
       name: "Projects",
     },
+    {
+      name: "Users",
+    },
+    {
+      name: "Sessions",
+    },
   ],
   paths: {
     "/api/health": {
@@ -238,7 +244,7 @@ const openApiSpec = {
             },
           },
         ],
-        requestBody: {
+                requestBody: {
           required: true,
           content: {
             "application/json": {
@@ -247,9 +253,11 @@ const openApiSpec = {
                 properties: {
                   content: { type: "string" },
                   author_id: { type: "integer" },
-                  project_id: { type: "integer" },
                 },
-                required: ["content", "author_id", "project_id"],
+                required: [
+                  "content",
+                  "author_id",
+                ],
               },
             },
           },
@@ -260,6 +268,117 @@ const openApiSpec = {
           },
           "404": {
             description: "Project not found",
+          },
+        },
+      },
+    },
+    "/api/users": {
+      post: {
+        tags: ["Users"],
+        summary: "Create a new user",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  username: { type: "string" },
+                  password: { type: "string" },
+                },
+                required: ["name", "username", "password"],
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "User created successfully",
+          },
+          "400": {
+            description: "Name, username, and password are required",
+          },
+          "409": {
+            description: "Username already exists",
+          },
+        },
+      },
+    },
+    "/api/sessions": {
+      get: {
+        tags: ["Sessions"],
+        summary: "Get the current session",
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "Bearer token",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Current session details",
+          },
+          "401": {
+            description: "Missing, invalid, expired, or revoked token",
+          },
+        },
+      },
+      post: {
+        tags: ["Sessions"],
+        summary: "Create a session",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  username: { type: "string" },
+                  password: { type: "string" },
+                },
+                required: ["username", "password"],
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Session created successfully",
+          },
+          "400": {
+            description: "Username and password are required",
+          },
+          "401": {
+            description: "Invalid username or password",
+          },
+        },
+      },
+      delete: {
+        tags: ["Sessions"],
+        summary: "Delete the current session",
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "Bearer token",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "Session deleted successfully",
+          },
+          "401": {
+            description: "Missing or invalid authorization header",
           },
         },
       },
