@@ -336,8 +336,11 @@ async function like(projectId: number): Promise<Project> {
 
 async function destroy(projectId: number): Promise<void> {
   await run(async () => {
-    await prisma.projects.delete({
-      where: { id: projectId },
+    // Manual cascade to satisfy FK constraints (comments, tags join table).
+    await prisma.$transaction(async (tx) => {
+      await tx.comments.deleteMany({ where: { project_id: projectId } });
+      await tx.projects_tags.deleteMany({ where: { project_id: projectId } });
+      await tx.projects.delete({ where: { id: projectId } });
     });
   });
 }
