@@ -22,8 +22,8 @@ WORKDIR /app
 COPY tsconfig.json tsconfig.jest.json jest.config.cjs prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
-COPY --from=frontend-build /frontend/dist/ ./src/public/
 RUN npm run build
+COPY --from=frontend-build /frontend/dist/ ./dist/src/public
 
 FROM node:20-bookworm-slim AS prod-deps
 WORKDIR /app
