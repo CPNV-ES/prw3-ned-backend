@@ -59,12 +59,13 @@ const openApiSpec = {
             example: "http://localhost:3000/storages/projects/demo.webp",
           },
           likes: { type: "integer", example: 3 },
-          created_at: {
-            type: "string",
-            format: "date-time",
-            example: "2026-03-18T11:09:25.000Z",
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            example: ["react", "node"],
           },
           author_id: { type: "integer", example: 2 },
+          author_name: { type: "string", example: "Jane Doe" },
         },
         required: [
           "id",
@@ -74,9 +75,25 @@ const openApiSpec = {
           "repository_url",
           "image_url",
           "likes",
-          "created_at",
+          "tags",
           "author_id",
+          "author_name",
         ],
+      },
+      Comment: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          content: { type: "string", example: "Nice project" },
+          created_at: {
+            type: "string",
+            format: "date-time",
+            example: "2026-03-25T09:00:00.000Z",
+          },
+          author_id: { type: "integer", example: 2 },
+          project_id: { type: "integer", example: 1 },
+        },
+        required: ["id", "content", "created_at", "author_id", "project_id"],
       },
       User: {
         type: "object",
@@ -153,6 +170,32 @@ const openApiSpec = {
         },
         required: ["username", "password"],
       },
+      ProjectWriteRequest: {
+        type: "object",
+        properties: {
+          title: { type: "string", example: "Demo Deck" },
+          summary: {
+            type: "string",
+            example: "A showcase platform for student projects.",
+          },
+          demo_url: {
+            type: "string",
+            format: "uri",
+            example: "https://demo.example.com",
+          },
+          repository_url: {
+            type: "string",
+            format: "uri",
+            example: "https://github.com/example/demo-deck",
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            example: ["react", "node"],
+            description: "Optional project tags.",
+          },
+        },
+      },
       ProjectMultipartRequest: {
         type: "object",
         properties: {
@@ -171,6 +214,12 @@ const openApiSpec = {
             format: "uri",
             example: "https://github.com/example/demo-deck",
           },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Optional project tags. For multipart requests, send multiple 'tags' fields.",
+          },
           image: {
             type: "string",
             format: "binary",
@@ -178,6 +227,13 @@ const openApiSpec = {
               "Optional project image. Accepted types: jpg, png, webp.",
           },
         },
+      },
+      CreateCommentRequest: {
+        type: "object",
+        properties: {
+          content: { type: "string", example: "Nice project" },
+        },
+        required: ["content"],
       },
       ErrorMessage: {
         type: "object",
@@ -230,7 +286,8 @@ const openApiSpec = {
             name: "tags",
             in: "query",
             schema: { type: "string" },
-            description: "Comma-separated tag names.",
+            description:
+              "Tag filter. Accepts comma-separated values (e.g. react,node).",
           },
           {
             name: "sortBy",
@@ -294,6 +351,24 @@ const openApiSpec = {
         requestBody: {
           required: true,
           content: {
+            "application/json": {
+              schema: {
+                allOf: [
+                  {
+                    $ref: "#/components/schemas/ProjectWriteRequest",
+                  },
+                  {
+                    type: "object",
+                    required: [
+                      "title",
+                      "summary",
+                      "demo_url",
+                      "repository_url",
+                    ],
+                  },
+                ],
+              },
+            },
             "multipart/form-data": {
               schema: {
                 allOf: [
@@ -411,8 +486,13 @@ const openApiSpec = {
           },
         ],
         requestBody: {
-          required: true,
+          required: false,
           content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ProjectWriteRequest",
+              },
+            },
             "multipart/form-data": {
               schema: {
                 $ref: "#/components/schemas/ProjectMultipartRequest",
@@ -577,6 +657,7 @@ const openApiSpec = {
       get: {
         tags: ["Projects"],
         summary: "Get all comments of a project",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -590,12 +671,53 @@ const openApiSpec = {
         responses: {
           "200": {
             description: "List of comments of this project",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/Comment",
+                  },
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Missing, invalid, expired, or revoked token",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
+          },
+          "404": {
+            description: "Project not found",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorError",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Unexpected server error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
           },
         },
       },
       post: {
         tags: ["Projects"],
         summary: "Post a comment on a project",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -611,11 +733,7 @@ const openApiSpec = {
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                properties: {
-                  content: { type: "string" },
-                },
-                required: ["content"],
+                $ref: "#/components/schemas/CreateCommentRequest",
               },
             },
           },
@@ -623,9 +741,53 @@ const openApiSpec = {
         responses: {
           "201": {
             description: "Project commented successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/Comment",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Missing required fields",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorError",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Missing, invalid, expired, or revoked token",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
           },
           "404": {
             description: "Project not found",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorError",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Unexpected server error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
           },
         },
       },

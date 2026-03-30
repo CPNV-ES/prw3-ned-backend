@@ -9,7 +9,11 @@ const prismaMock = {
   },
   comments: {
     findMany: jest.fn(),
+    deleteMany: jest.fn(),
     create: jest.fn(),
+  },
+  projects_tags: {
+    deleteMany: jest.fn(),
   },
 };
 
@@ -575,6 +579,12 @@ describe("Projects Service", () => {
 
     await projectsService.destroy(1);
 
+    expect(prismaMock.comments.deleteMany).toHaveBeenCalledWith({
+      where: { project_id: 1 },
+    });
+    expect(prismaMock.projects_tags.deleteMany).toHaveBeenCalledWith({
+      where: { project_id: 1 },
+    });
     expect(prismaMock.projects.delete).toHaveBeenCalledWith({
       where: { id: 1 },
     });
