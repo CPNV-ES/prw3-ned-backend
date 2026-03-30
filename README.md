@@ -15,6 +15,12 @@ This project is a web application that allows users to create and share their pr
 ### Configuration
 
 Copy the .env.example file to .env and fill in the required environment variables. (Comment are provided in the .env.example file)
+After cloning the repository, initialize and update the submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
 
 ## Deployment
 
@@ -23,6 +29,7 @@ Copy the .env.example file to .env and fill in the required environment variable
 ```bash
 npm install
 npm run db:init
+npm run build:frontend # This will build the frontend and copy the static files to src/public
 npm run dev
 ```
 
