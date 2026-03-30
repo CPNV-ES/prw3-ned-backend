@@ -2,21 +2,46 @@
   "name": "sample-nodejs-app",
   "version": "1.0.0",
   "description": "Sample Node.js application structure",
-  "main": "src/app.js",
+  "main": "dist/src/app.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "node src/app.js",
-    "start": "NODE_ENV=production node src/app.js",
-    "test": "node --test",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "dev": "tsx src/app.ts",
+    "db:init": "prisma db push && prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "start": "npm run build && NODE_ENV=production node dist/src/app.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check:format": "prettier --check ."
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@prisma/adapter-mariadb": "^7.4.2",
+    "@prisma/client": "^7.4.2",
+    "@types/multer": "^2.1.0",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "multer": "^2.1.1",
+    "swagger-ui-dist": "^5.32.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.3.3",
+    "@types/supertest": "^7.2.0",
+    "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^10.0.2",
-    "prettier": "^3.8.1"
+    "jest": "^30.3.0",
+    "jiti": "^2.6.1",
+    "prettier": "^3.8.1",
+    "prisma": "^7.5.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1"
   }
 }
