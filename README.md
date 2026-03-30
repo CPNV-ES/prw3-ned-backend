@@ -21,7 +21,6 @@ After cloning the repository, initialize and update the submodules:
 git submodule update --init --recursive
 ```
 
-
 ## Deployment
 
 ### On dev environment
