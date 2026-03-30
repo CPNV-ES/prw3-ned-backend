@@ -1,3 +1,15 @@
+FROM node:20-bookworm-slim AS frontend-deps
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+FROM frontend-deps AS frontend-build
+WORKDIR /frontend
+
+COPY frontend/ ./
+RUN npm run build
+
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 
@@ -10,6 +22,7 @@ WORKDIR /app
 COPY tsconfig.json tsconfig.jest.json jest.config.cjs prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
+COPY --from=frontend-build /frontend/dist/ ./src/public/
 RUN npm run build
 
 FROM node:20-bookworm-slim AS prod-deps
