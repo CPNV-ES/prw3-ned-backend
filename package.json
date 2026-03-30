@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "prisma generate && tsc -p tsconfig.json",
+    "build:frontend": "cd frontend && npm install && npm run build && cd .. && cp -r frontend/dist/* src/public/",
     "dev": "tsx src/app.ts",
     "db:init": "prisma db push && prisma generate",
     "db:migrate": "prisma migrate dev",
