@@ -1,9 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import {
-  projectsService,
-  type Project as ProjectRecord,
-} from "../services/projects.service";
+import { projectsService } from "../services/projects.service";
 import { ProjectNotFoundError } from "../errors/projects/project-not-found.error";
 import {
   createForbiddenError,
@@ -15,18 +12,7 @@ import {
   buildProjectImageUrl,
   deleteStoredProjectImage,
 } from "../utils/project-images";
-
-function serializeProject(project: ProjectRecord) {
-  const { author_id: authorId, author_name: authorName, ...rest } = project;
-
-  return {
-    ...rest,
-    author: {
-      id: authorId,
-      name: authorName,
-    },
-  };
-}
+import { serializeProject } from "./project.serializer";
 
 async function index(
   req: Request,

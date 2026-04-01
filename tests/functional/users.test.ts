@@ -157,6 +157,21 @@ describe("/api/users", () => {
     expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
     expect(getUserByIdMock).toHaveBeenCalledWith(1);
     expect(getAllByAuthorIdMock).toHaveBeenCalledWith(1);
-    expect(response.body).toEqual(projects);
+    expect(response.body).toEqual([
+      {
+        id: 10,
+        title: "Portfolio",
+        summary: "Project summary",
+        demo_url: "https://demo.example.com",
+        repository_url: "https://github.com/example/repo",
+        image_url: "https://images.example.com/p1.png",
+        likes: 2,
+        tags: ["react"],
+        author: {
+          id: 1,
+          name: "Sample User",
+        },
+      },
+    ]);
   });
 });

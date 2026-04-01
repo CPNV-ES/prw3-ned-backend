@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { projectsService } from "../services/projects.service";
 import { createBadRequestError } from "../utils/http-error";
 import { createUser, listUsers, getUserById } from "../services/users.service";
+import { serializeProject } from "./project.serializer";
 
 export async function createUserController(
   req: Request,
@@ -87,7 +88,7 @@ export async function listUserProjectsController(
     }
 
     const projects = await projectsService.getAllByAuthorId(userId);
-    res.json(projects);
+    res.json(projects.map(serializeProject));
   } catch (error) {
     next(error);
   }
