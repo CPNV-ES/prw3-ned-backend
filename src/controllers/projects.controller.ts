@@ -12,6 +12,7 @@ import {
   buildProjectImageUrl,
   deleteStoredProjectImage,
 } from "../utils/project-images";
+import { serializeComment, serializeProject } from "./project.serializer";
 
 async function index(
   req: Request,
@@ -92,7 +93,7 @@ async function index(
       ? await projectsService.getAll(options)
       : await projectsService.getAll();
 
-    res.status(200).json(projects);
+    res.status(200).json(projects.map(serializeProject));
   } catch (error) {
     next(error);
   }
@@ -113,7 +114,7 @@ async function show(
       return;
     }
 
-    res.status(200).json(project);
+    res.status(200).json(serializeProject(project));
   } catch (error) {
     next(error);
   }
@@ -156,7 +157,7 @@ async function store(
       tags: normalizedTags,
     });
 
-    res.status(201).json(newProject);
+    res.status(201).json(serializeProject(newProject));
   } catch (error) {
     if (uploadedFile) {
       await deleteStoredProjectImage(image_url);
@@ -174,7 +175,7 @@ async function commentsIndex(
 
   try {
     const comments = await projectsService.getComments(projectId);
-    res.status(200).json(comments);
+    res.status(200).json(comments.map(serializeComment));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
@@ -211,7 +212,7 @@ async function commentsStore(
       author_id: currentUserId,
     });
 
-    res.status(201).json(newComment);
+    res.status(201).json(serializeComment(newComment));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
@@ -264,7 +265,7 @@ async function update(
       await deleteStoredProjectImage(existingProject.image_url);
     }
 
-    res.status(200).json(updatedProject);
+    res.status(200).json(serializeProject(updatedProject));
   } catch (error) {
     if (newImageUrl) {
       await deleteStoredProjectImage(newImageUrl);
@@ -288,7 +289,7 @@ async function like(
 
   try {
     const updatedProject = await projectsService.like(projectId);
-    res.status(200).json(updatedProject);
+    res.status(200).json(serializeProject(updatedProject));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });

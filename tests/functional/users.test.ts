@@ -1,5 +1,7 @@
 import request from "supertest";
 
+import { SESSION_COOKIE_NAME } from "../../src/config/session-cookie";
+
 jest.mock("../../src/routes/sessions.routes", () => {
   const { Router } = jest.requireActual("express");
   return { __esModule: true, default: Router() };
@@ -13,12 +15,19 @@ jest.mock("../../src/routes/projects.routes", () => {
 const createUserMock = jest.fn();
 const listUsersMock = jest.fn();
 const getUserByIdMock = jest.fn();
+const getAllByAuthorIdMock = jest.fn();
 const getCurrentSessionMock = jest.fn();
 
 jest.mock("../../src/services/users.service", () => ({
   createUser: createUserMock,
   listUsers: listUsersMock,
   getUserById: getUserByIdMock,
+}));
+
+jest.mock("../../src/services/projects.service", () => ({
+  projectsService: {
+    getAllByAuthorId: getAllByAuthorIdMock,
+  },
 }));
 
 jest.mock("../../src/services/sessions.service", () => ({
@@ -69,7 +78,7 @@ describe("/api/users", () => {
 
     const response = await request(app)
       .get("/api/users")
-      .set("Authorization", "Bearer test-token")
+      .set("Cookie", `${SESSION_COOKIE_NAME}=test-token`)
       .expect(200);
 
     expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
@@ -96,11 +105,73 @@ describe("/api/users", () => {
 
     const response = await request(app)
       .get("/api/users/1")
-      .set("Authorization", "Bearer test-token")
+      .set("Cookie", `${SESSION_COOKIE_NAME}=test-token`)
       .expect(200);
 
     expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
     expect(getUserByIdMock).toHaveBeenCalledWith(1);
     expect(response.body).toEqual(user);
+  });
+
+  it("rejects GET /api/users/:id/projects when not authenticated", async () => {
+    const response = await request(app)
+      .get("/api/users/1/projects")
+      .expect(401);
+
+    expect(getUserByIdMock).not.toHaveBeenCalled();
+    expect(getAllByAuthorIdMock).not.toHaveBeenCalled();
+    expect(response.body).toEqual({
+      message: "Missing or invalid authorization header",
+    });
+  });
+
+  it("lists one user's projects when authenticated", async () => {
+    const user = { id: 1, name: "Sample User", username: "sample" };
+    const projects = [
+      {
+        id: 10,
+        title: "Portfolio",
+        summary: "Project summary",
+        demo_url: "https://demo.example.com",
+        repository_url: "https://github.com/example/repo",
+        image_url: "https://images.example.com/p1.png",
+        likes: 2,
+        tags: ["react"],
+        author_id: 1,
+        author_name: "Sample User",
+      },
+    ];
+
+    getCurrentSessionMock.mockResolvedValueOnce({
+      expiresAt: new Date().toISOString(),
+      user,
+    });
+    getUserByIdMock.mockResolvedValueOnce(user);
+    getAllByAuthorIdMock.mockResolvedValueOnce(projects);
+
+    const response = await request(app)
+      .get("/api/users/1/projects")
+      .set("Cookie", `${SESSION_COOKIE_NAME}=test-token`)
+      .expect(200);
+
+    expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
+    expect(getUserByIdMock).toHaveBeenCalledWith(1);
+    expect(getAllByAuthorIdMock).toHaveBeenCalledWith(1);
+    expect(response.body).toEqual([
+      {
+        id: 10,
+        title: "Portfolio",
+        summary: "Project summary",
+        demo_url: "https://demo.example.com",
+        repository_url: "https://github.com/example/repo",
+        image_url: "https://images.example.com/p1.png",
+        likes: 2,
+        tags: ["react"],
+        author: {
+          id: 1,
+          name: "Sample User",
+        },
+      },
+    ]);
   });
 });

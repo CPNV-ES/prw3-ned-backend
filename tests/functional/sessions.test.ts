@@ -1,5 +1,7 @@
 import request from "supertest";
 
+import { SESSION_COOKIE_NAME } from "../../src/config/session-cookie";
+
 jest.mock("../../src/routes/users.routes", () => {
   const { Router } = jest.requireActual("express");
   return { __esModule: true, default: Router() };
@@ -54,16 +56,26 @@ describe("/api/sessions", () => {
       .expect(200);
 
     expect(createSessionMock).toHaveBeenCalledWith(credentials);
-    expect(response.body).toEqual(sessionResponse);
+    expect(response.body).toEqual({
+      expiresAt: sessionResponse.expiresAt,
+      user: sessionResponse.user,
+    });
+    expect(response.headers["set-cookie"]).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          `${SESSION_COOKIE_NAME}=${sessionResponse.token}`,
+        ),
+      ]),
+    );
   });
 
-  it("returns the current session when a bearer token is provided", async () => {
+  it("returns the current session when a session cookie is provided", async () => {
     const token = "current-session-token";
     getCurrentSessionMock.mockResolvedValueOnce(currentSessionResponse);
 
     const response = await request(app)
       .get("/api/sessions")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Cookie", `${SESSION_COOKIE_NAME}=${token}`)
       .expect(200);
 
     expect(getCurrentSessionMock).toHaveBeenCalledWith(token);
@@ -76,7 +88,7 @@ describe("/api/sessions", () => {
 
     await request(app)
       .delete("/api/sessions")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Cookie", `${SESSION_COOKIE_NAME}=${token}`)
       .expect(204);
 
     expect(revokeSessionTokenMock).toHaveBeenCalledWith(token);

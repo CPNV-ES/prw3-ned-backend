@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { extractSessionCookieToken } from "../config/session-cookie";
 import { createUnauthorizedError } from "../utils/http-error";
 import {
   getCurrentSession,
@@ -13,6 +14,12 @@ export type AuthenticatedRequest = Request & {
 };
 
 export const extractAuthorizationToken = (req: Request): string => {
+  const sessionCookieToken = extractSessionCookieToken(req);
+
+  if (sessionCookieToken) {
+    return sessionCookieToken;
+  }
+
   const authorization = req.headers.authorization;
 
   if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {

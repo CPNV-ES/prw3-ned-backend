@@ -1,7 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { projectsService } from "../services/projects.service";
 import { createBadRequestError } from "../utils/http-error";
 import { createUser, listUsers, getUserById } from "../services/users.service";
+import { serializeProject } from "./project.serializer";
 
 export async function createUserController(
   req: Request,
@@ -61,6 +63,32 @@ export async function listUsersController(
     const users = await listUsers(page, limit);
 
     res.json(users);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listUserProjectsController(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(userId)) {
+      throw createBadRequestError("Invalid user ID");
+    }
+
+    const user = await getUserById(userId);
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const projects = await projectsService.getAllByAuthorId(userId);
+    res.json(projects.map(serializeProject));
   } catch (error) {
     next(error);
   }

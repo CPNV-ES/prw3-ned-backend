@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+frontend/node_modules
+dist
+frontend/dist
+coverage
+tests
+storages
+scripts
+.env
+.DS_Store

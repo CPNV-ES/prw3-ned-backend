@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma";
 
-import { jwtExpiresInSeconds, jwtSecret } from "../config/env";
+import { jwtExpiresInSeconds } from "../config/env";
+import { jwtSecret } from "../config/jwt-secret";
 import { createUnauthorizedError } from "../utils/http-error";
 import { signJwt, verifyJwt, type JwtPayload } from "../utils/jwt";
 import { verifyPassword } from "../utils/password";
@@ -12,7 +13,6 @@ export interface CreateSessionInput {
 }
 
 export interface SessionOutput {
-  token: string;
   expiresAt: string;
   user: {
     id: number;
@@ -104,7 +104,7 @@ export async function getCurrentSession(
 export async function createSession({
   username,
   password,
-}: CreateSessionInput): Promise<SessionOutput> {
+}: CreateSessionInput): Promise<SessionOutput & { token: string }> {
   const user = await prisma.users.findUnique({ where: { username } });
 
   if (!user) {

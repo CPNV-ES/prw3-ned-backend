@@ -15,6 +15,11 @@ This project is a web application that allows users to create and share their pr
 ### Configuration
 
 Copy the .env.example file to .env and fill in the required environment variables. (Comment are provided in the .env.example file)
+After cloning the repository, initialize and update the submodules:
+
+```bash
+git submodule update --init --recursive
+```
 
 ## Deployment
 
@@ -23,8 +28,47 @@ Copy the .env.example file to .env and fill in the required environment variable
 ```bash
 npm install
 npm run db:init
+npm run build:frontend # This will build the frontend and copy the static files to src/public
 npm run dev
 ```
+
+### On integration environment
+
+This repository includes a Docker Compose setup in `examples/productions-setup` for a production-like deployment of the API and its MySQL database.
+
+1. Copy `examples/productions-setup/.env.example` to `examples/productions-setup/.env`.
+2. Set real values for:
+   - `DATABASE_ROOT_PASSWORD`
+   - `DATABASE_NAME`
+   - `DATABASE_USER`
+   - `DATABASE_PASSWORD`
+3. Start the stack from the repository root:
+
+```bash
+docker compose -f examples/productions-setup/docker-compose.yaml up -d --build
+```
+
+The compose stack includes:
+
+- `db`: MySQL 8.4 with persistent storage and a health check
+- `app`: the production Node.js container, built from this repository, with restart policy, `prisma migrate deploy` on startup, a health check, and persistent project image storage
+
+Useful commands:
+
+```bash
+docker compose -f examples/productions-setup/docker-compose.yaml logs -f app
+docker compose -f examples/productions-setup/docker-compose.yaml ps
+docker compose -f examples/productions-setup/docker-compose.yaml down
+```
+
+Notes:
+
+- Only the API port is published by default. The database stays on the internal Docker network.
+- The API is exposed on `APP_PORT` from `examples/productions-setup/.env` and defaults to `3000`.
+- Uploaded project images are stored in `examples/productions-setup/data/projects`.
+- The JWT signing secret is created automatically in `storages/private/jwt-secret` on first start and should be persisted and kept private.
+- MySQL data is stored in `examples/productions-setup/data/mysql`.
+- In a real public deployment, place a reverse proxy or load balancer in front of the `app` service for TLS termination.
 
 ## Directory structure
 

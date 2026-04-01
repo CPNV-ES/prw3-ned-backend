@@ -2,6 +2,7 @@ import request from "supertest";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 
+import { SESSION_COOKIE_NAME } from "../../src/config/session-cookie";
 import { ProjectNotFoundError } from "../../src/errors/projects/project-not-found.error";
 import {
   DEFAULT_PROJECT_IMAGE_PUBLIC_PATH,
@@ -57,6 +58,38 @@ const sampleProject = {
   author_name: "Alice",
 };
 
+const sampleProjectResponse = {
+  id: sampleProject.id,
+  title: sampleProject.title,
+  summary: sampleProject.summary,
+  demo_url: sampleProject.demo_url,
+  repository_url: sampleProject.repository_url,
+  image_url: sampleProject.image_url,
+  likes: sampleProject.likes,
+  tags: sampleProject.tags,
+  author: {
+    id: sampleProject.author_id,
+    name: sampleProject.author_name,
+  },
+};
+
+function serializeProjectResponse(project: typeof sampleProject) {
+  return {
+    id: project.id,
+    title: project.title,
+    summary: project.summary,
+    demo_url: project.demo_url,
+    repository_url: project.repository_url,
+    image_url: project.image_url,
+    likes: project.likes,
+    tags: project.tags,
+    author: {
+      id: project.author_id,
+      name: project.author_name,
+    },
+  };
+}
+
 const createPayload = {
   title: sampleProject.title,
   summary: sampleProject.summary,
@@ -64,7 +97,8 @@ const createPayload = {
   repository_url: sampleProject.repository_url,
 };
 
-const authHeader = { Authorization: "Bearer test-token" };
+const authCookie = { Cookie: `${SESSION_COOKIE_NAME}=test-token` };
+const authHeader = authCookie;
 const pngBuffer = Buffer.from(
   "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c49444154789c6360000002000154a24f5a0000000049454e44ae426082",
   "hex",
@@ -75,7 +109,7 @@ function buildMultipartProjectRequest(method: "post" | "put", url: string) {
     request(app)
       // eslint-disable-next-line no-unexpected-multiline
       [method](url)
-      .set(authHeader)
+      .set(authCookie)
       .field("title", createPayload.title)
       .field("summary", createPayload.summary)
       .field("demo_url", createPayload.demo_url)
@@ -87,8 +121,11 @@ const sampleComment = {
   id: 1,
   content: "Nice project",
   created_at: new Date("2026-03-25T09:00:00.000Z"),
-  author_id: 42,
   project_id: 1,
+  author: {
+    id: 42,
+    name: "Alice",
+  },
 };
 
 describe("Projects Functional API", () => {
@@ -114,16 +151,16 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should return project list", async () => {
     mockedProjectsService.getAll.mockResolvedValue([sampleProject]);
 
-    const response = await request(app).get("/api/projects").set(authHeader);
+    const response = await request(app).get("/api/projects").set(authCookie);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([sampleProject]);
+    expect(response.body).toEqual([sampleProjectResponse]);
   });
 
   it("GET /api/projects should return 500 on unexpected service error", async () => {
     mockedProjectsService.getAll.mockRejectedValue(new Error("db fail"));
 
-    const response = await request(app).get("/api/projects").set(authHeader);
+    const response = await request(app).get("/api/projects").set(authCookie);
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual(
@@ -136,7 +173,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .get("/api/projects?name=Port")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({ name: "Port" });
     expect(response.status).toBe(200);
@@ -147,7 +184,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .get("/api/projects?tags=react,node")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       tags: ["react", "node"],
@@ -160,7 +197,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .get("/api/projects?sortBy=likes&order=asc")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       sortBy: "likes",
@@ -174,7 +211,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .get("/api/projects?sortBy=date")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).toHaveBeenCalledWith({
       sortBy: "date",
@@ -186,7 +223,7 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should return 400 for invalid sortBy", async () => {
     const response = await request(app)
       .get("/api/projects?sortBy=wat")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
     expect(response.status).toBe(400);
@@ -196,7 +233,7 @@ describe("Projects Functional API", () => {
   it("GET /api/projects should return 400 for invalid order", async () => {
     const response = await request(app)
       .get("/api/projects?sortBy=likes&order=wat")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(mockedProjectsService.getAll).not.toHaveBeenCalled();
     expect(response.status).toBe(400);
@@ -206,10 +243,10 @@ describe("Projects Functional API", () => {
   it("GET /api/projects/:id should return one project", async () => {
     mockedProjectsService.getById.mockResolvedValue(sampleProject);
 
-    const response = await request(app).get("/api/projects/1").set(authHeader);
+    const response = await request(app).get("/api/projects/1").set(authCookie);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(sampleProject);
+    expect(response.body).toEqual(sampleProjectResponse);
   });
 
   it("GET /api/projects/:id should return 404 for missing project", async () => {
@@ -217,7 +254,7 @@ describe("Projects Functional API", () => {
 
     const response = await request(app)
       .get("/api/projects/999")
-      .set(authHeader);
+      .set(authCookie);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Project not found" });
@@ -245,6 +282,8 @@ describe("Projects Functional API", () => {
   });
 
   it("POST /api/projects should use the default image when none is uploaded", async () => {
+    mockedProjectsService.create.mockResolvedValue(sampleProject);
+
     const response = await buildMultipartProjectRequest(
       "post",
       "/api/projects",
@@ -297,6 +336,7 @@ describe("Projects Functional API", () => {
       expect.objectContaining({
         title: sampleProject.title,
         image_url: expect.stringContaining("/storages/projects/"),
+        author: sampleProjectResponse.author,
       }),
     );
   });
@@ -325,7 +365,7 @@ describe("Projects Functional API", () => {
       }),
     );
     expect(response.status).toBe(201);
-    expect(response.body).toEqual(sampleProject);
+    expect(response.body).toEqual(sampleProjectResponse);
   });
 
   it("POST /api/projects should return 500 on unexpected service error", async () => {
@@ -564,7 +604,7 @@ describe("Projects Functional API", () => {
       tags: [],
     });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(updatedProject);
+    expect(response.body).toEqual(serializeProjectResponse(updatedProject));
   });
 
   it("PUT /api/projects/:id should return 404 for missing project", async () => {
@@ -622,7 +662,7 @@ describe("Projects Functional API", () => {
 
     expect(mockedProjectsService.like).toHaveBeenCalledWith(1);
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(likedProject);
+    expect(response.body).toEqual(serializeProjectResponse(likedProject));
   });
 
   it("POST /api/projects/:id/like should return 500 on unexpected service error", async () => {

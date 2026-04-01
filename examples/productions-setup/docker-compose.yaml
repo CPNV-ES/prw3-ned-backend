@@ -1,0 +1,71 @@
+name: prw3-project
+
+services:
+  db:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:?DATABASE_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${DATABASE_NAME:?DATABASE_NAME is required}
+      MYSQL_USER: ${DATABASE_USER:?DATABASE_USER is required}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - backend
+  app:
+    build: # can be replaced with `image: ghcr.io/cpnv-es/prw3-ned-backend:main`
+      context: ../..
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: ${DATABASE_NAME:?DATABASE_NAME is required}
+      DATABASE_USER: ${DATABASE_USER:?DATABASE_USER is required}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
+      DATABASE_URL: mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@db:3306/${DATABASE_NAME}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ./data/backend:/app/storages
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  db_data:
+  project_storage:

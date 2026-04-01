@@ -19,11 +19,18 @@ export interface Comment {
   id: number;
   content: string;
   created_at: Date;
-  author_id: number;
   project_id: number;
+  author: {
+    id: number;
+    name: string;
+  };
 }
 
 type ProjectWriteInput = Omit<Project, "id" | "author_name" | "likes">;
+type CommentWriteInput = {
+  content: string;
+  author_id: number;
+};
 
 export interface ProjectsListOptions {
   name?: string;
@@ -72,8 +79,24 @@ const projectSelect = {
   },
 } satisfies Prisma.projectsSelect;
 
+const commentSelect = {
+  id: true,
+  content: true,
+  created_at: true,
+  project_id: true,
+  author: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.commentsSelect;
+
 type ProjectWithAuthor = Prisma.projectsGetPayload<{
   select: typeof projectSelect;
+}>;
+type CommentWithAuthor = Prisma.commentsGetPayload<{
+  select: typeof commentSelect;
 }>;
 
 function normalizeTags(tags: string[]): string[] {
@@ -92,6 +115,19 @@ function mapProject(project: ProjectWithAuthor): Project {
     tags: project.tags.map((projectTag) => projectTag.tag.name),
     author_id: project.author_id,
     author_name: project.author.name,
+  };
+}
+
+function mapComment(comment: CommentWithAuthor): Comment {
+  return {
+    id: comment.id,
+    content: comment.content,
+    created_at: comment.created_at,
+    project_id: comment.project_id,
+    author: {
+      id: comment.author.id,
+      name: comment.author.name,
+    },
   };
 }
 
@@ -162,6 +198,17 @@ async function getById(projectId: number): Promise<Project | null> {
   });
 }
 
+async function getAllByAuthorId(authorId: number): Promise<Project[]> {
+  return run(async () => {
+    const projects = await prisma.projects.findMany({
+      where: { author_id: authorId },
+      select: projectSelect,
+    });
+
+    return projects.map(mapProject);
+  });
+}
+
 async function create(project: ProjectWriteInput): Promise<Project> {
   return run(async () => {
     const { author_id, tags = [], ...projectData } = project;
@@ -209,16 +256,19 @@ async function getComments(projectId: number): Promise<Comment[]> {
       throw new ProjectNotFoundError();
     }
 
-    return prisma.comments.findMany({
+    const comments = await prisma.comments.findMany({
       where: { project_id: projectId },
       orderBy: { created_at: "desc" },
+      select: commentSelect,
     });
+
+    return comments.map(mapComment);
   });
 }
 
 async function createComment(
   projectId: number,
-  comment: Omit<Comment, "id" | "created_at" | "project_id">,
+  comment: CommentWriteInput,
 ): Promise<Comment> {
   return run(async () => {
     const project = await prisma.projects.findUnique({
@@ -229,12 +279,15 @@ async function createComment(
       throw new ProjectNotFoundError();
     }
 
-    return prisma.comments.create({
+    const createdComment = await prisma.comments.create({
       data: {
         ...comment,
         project_id: projectId,
       },
+      select: commentSelect,
     });
+
+    return mapComment(createdComment);
   });
 }
 
@@ -347,6 +400,7 @@ async function destroy(projectId: number): Promise<void> {
 
 export const projectsService = {
   getAll,
+  getAllByAuthorId,
   getById,
   create,
   getComments,
