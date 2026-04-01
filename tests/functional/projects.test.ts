@@ -121,8 +121,11 @@ const sampleComment = {
   id: 1,
   content: "Nice project",
   created_at: new Date("2026-03-25T09:00:00.000Z"),
-  author_id: 42,
   project_id: 1,
+  author: {
+    id: 42,
+    name: "Alice",
+  },
 };
 
 describe("Projects Functional API", () => {

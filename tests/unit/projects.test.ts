@@ -110,8 +110,11 @@ const sampleComment = {
   id: 1,
   content: "Nice project",
   created_at: new Date("2026-03-25T09:00:00.000Z"),
-  author_id: 42,
   project_id: 1,
+  author: {
+    id: 42,
+    name: "Alice",
+  },
 };
 
 describe("Projects Service", () => {
@@ -300,6 +303,18 @@ describe("Projects Service", () => {
     expect(prismaMock.comments.findMany).toHaveBeenCalledWith({
       where: { project_id: 1 },
       orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        content: true,
+        created_at: true,
+        project_id: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
     expect(result).toEqual([sampleComment]);
   });
@@ -329,6 +344,18 @@ describe("Projects Service", () => {
         content: "Nice project",
         author_id: 42,
         project_id: 1,
+      },
+      select: {
+        id: true,
+        content: true,
+        created_at: true,
+        project_id: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
     expect(result).toEqual(sampleComment);

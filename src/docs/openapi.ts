@@ -100,10 +100,17 @@ const openApiSpec = {
             format: "date-time",
             example: "2026-03-25T09:00:00.000Z",
           },
-          author_id: { type: "integer", example: 2 },
           project_id: { type: "integer", example: 1 },
+          author: {
+            type: "object",
+            properties: {
+              id: { type: "integer", example: 2 },
+              name: { type: "string", example: "Jane Doe" },
+            },
+            required: ["id", "name"],
+          },
         },
-        required: ["id", "content", "created_at", "author_id", "project_id"],
+        required: ["id", "content", "created_at", "project_id", "author"],
       },
       User: {
         type: "object",

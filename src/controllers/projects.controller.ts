@@ -12,7 +12,7 @@ import {
   buildProjectImageUrl,
   deleteStoredProjectImage,
 } from "../utils/project-images";
-import { serializeProject } from "./project.serializer";
+import { serializeComment, serializeProject } from "./project.serializer";
 
 async function index(
   req: Request,
@@ -175,7 +175,7 @@ async function commentsIndex(
 
   try {
     const comments = await projectsService.getComments(projectId);
-    res.status(200).json(comments);
+    res.status(200).json(comments.map(serializeComment));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
@@ -212,7 +212,7 @@ async function commentsStore(
       author_id: currentUserId,
     });
 
-    res.status(201).json(newComment);
+    res.status(201).json(serializeComment(newComment));
   } catch (error) {
     if (error instanceof ProjectNotFoundError) {
       res.status(404).json({ error: error.message });
