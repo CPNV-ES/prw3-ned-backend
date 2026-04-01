@@ -58,6 +58,38 @@ const sampleProject = {
   author_name: "Alice",
 };
 
+const sampleProjectResponse = {
+  id: sampleProject.id,
+  title: sampleProject.title,
+  summary: sampleProject.summary,
+  demo_url: sampleProject.demo_url,
+  repository_url: sampleProject.repository_url,
+  image_url: sampleProject.image_url,
+  likes: sampleProject.likes,
+  tags: sampleProject.tags,
+  author: {
+    id: sampleProject.author_id,
+    name: sampleProject.author_name,
+  },
+};
+
+function serializeProjectResponse(project: typeof sampleProject) {
+  return {
+    id: project.id,
+    title: project.title,
+    summary: project.summary,
+    demo_url: project.demo_url,
+    repository_url: project.repository_url,
+    image_url: project.image_url,
+    likes: project.likes,
+    tags: project.tags,
+    author: {
+      id: project.author_id,
+      name: project.author_name,
+    },
+  };
+}
+
 const createPayload = {
   title: sampleProject.title,
   summary: sampleProject.summary,
@@ -119,7 +151,7 @@ describe("Projects Functional API", () => {
     const response = await request(app).get("/api/projects").set(authCookie);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([sampleProject]);
+    expect(response.body).toEqual([sampleProjectResponse]);
   });
 
   it("GET /api/projects should return 500 on unexpected service error", async () => {
@@ -211,7 +243,7 @@ describe("Projects Functional API", () => {
     const response = await request(app).get("/api/projects/1").set(authCookie);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(sampleProject);
+    expect(response.body).toEqual(sampleProjectResponse);
   });
 
   it("GET /api/projects/:id should return 404 for missing project", async () => {
@@ -247,6 +279,8 @@ describe("Projects Functional API", () => {
   });
 
   it("POST /api/projects should use the default image when none is uploaded", async () => {
+    mockedProjectsService.create.mockResolvedValue(sampleProject);
+
     const response = await buildMultipartProjectRequest(
       "post",
       "/api/projects",
@@ -299,6 +333,7 @@ describe("Projects Functional API", () => {
       expect.objectContaining({
         title: sampleProject.title,
         image_url: expect.stringContaining("/storages/projects/"),
+        author: sampleProjectResponse.author,
       }),
     );
   });
@@ -327,7 +362,7 @@ describe("Projects Functional API", () => {
       }),
     );
     expect(response.status).toBe(201);
-    expect(response.body).toEqual(sampleProject);
+    expect(response.body).toEqual(sampleProjectResponse);
   });
 
   it("POST /api/projects should return 500 on unexpected service error", async () => {
@@ -566,7 +601,7 @@ describe("Projects Functional API", () => {
       tags: [],
     });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(updatedProject);
+    expect(response.body).toEqual(serializeProjectResponse(updatedProject));
   });
 
   it("PUT /api/projects/:id should return 404 for missing project", async () => {
@@ -624,7 +659,7 @@ describe("Projects Functional API", () => {
 
     expect(mockedProjectsService.like).toHaveBeenCalledWith(1);
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(likedProject);
+    expect(response.body).toEqual(serializeProjectResponse(likedProject));
   });
 
   it("POST /api/projects/:id/like should return 500 on unexpected service error", async () => {

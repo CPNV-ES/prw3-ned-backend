@@ -69,8 +69,14 @@ const openApiSpec = {
             items: { type: "string" },
             example: ["react", "node"],
           },
-          author_id: { type: "integer", example: 2 },
-          author_name: { type: "string", example: "Jane Doe" },
+          author: {
+            type: "object",
+            properties: {
+              id: { type: "integer", example: 2 },
+              name: { type: "string", example: "Jane Doe" },
+            },
+            required: ["id", "name"],
+          },
         },
         required: [
           "id",
@@ -81,8 +87,7 @@ const openApiSpec = {
           "image_url",
           "likes",
           "tags",
-          "author_id",
-          "author_name",
+          "author",
         ],
       },
       Comment: {
