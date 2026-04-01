@@ -964,6 +964,72 @@ const openApiSpec = {
         },
       },
     },
+    "/api/users/{id}/projects": {
+      get: {
+        tags: ["Users", "Projects"],
+        summary: "List all projects for a user",
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of the user's projects",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/Project",
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid user ID",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Missing, invalid, expired, or revoked token",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorMessage",
+                },
+              },
+            },
+          },
+          "404": {
+            description: "User not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "User not found" },
+                  },
+                  required: ["message"],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/sessions": {
       get: {
         tags: ["Sessions"],

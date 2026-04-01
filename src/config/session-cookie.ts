@@ -17,16 +17,18 @@ const parseCookies = (cookieHeader?: string): Record<string, string> => {
     return {};
   }
 
-  return cookieHeader.split(";").reduce<Record<string, string>>((cookies, part) => {
-    const [rawName, ...rawValueParts] = part.trim().split("=");
+  return cookieHeader
+    .split(";")
+    .reduce<Record<string, string>>((cookies, part) => {
+      const [rawName, ...rawValueParts] = part.trim().split("=");
 
-    if (!rawName || rawValueParts.length === 0) {
+      if (!rawName || rawValueParts.length === 0) {
+        return cookies;
+      }
+
+      cookies[rawName] = decodeURIComponent(rawValueParts.join("="));
       return cookies;
-    }
-
-    cookies[rawName] = decodeURIComponent(rawValueParts.join("="));
-    return cookies;
-  }, {});
+    }, {});
 };
 
 export const extractSessionCookieToken = (req: Request): string | null => {

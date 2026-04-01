@@ -233,6 +233,18 @@ describe("Projects Service", () => {
     expect(result).toEqual(sampleProject);
   });
 
+  it("getAllByAuthorId should return one user's projects", async () => {
+    prismaMock.projects.findMany.mockResolvedValue([sampleProjectDbRecord]);
+
+    const result = await projectsService.getAllByAuthorId(42);
+
+    expect(prismaMock.projects.findMany).toHaveBeenCalledWith({
+      where: { author_id: 42 },
+      select: expectedProjectSelect,
+    });
+    expect(result).toEqual([sampleProject]);
+  });
+
   it("create should persist and return project", async () => {
     prismaMock.projects.create.mockResolvedValue(sampleProjectDbRecord);
 

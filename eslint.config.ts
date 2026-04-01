@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "jest.config.cjs"],
+    ignores: ["dist/**", "src/public/**", "jest.config.cjs"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

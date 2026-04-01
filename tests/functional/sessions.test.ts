@@ -62,7 +62,9 @@ describe("/api/sessions", () => {
     });
     expect(response.headers["set-cookie"]).toEqual(
       expect.arrayContaining([
-        expect.stringContaining(`${SESSION_COOKIE_NAME}=${sessionResponse.token}`),
+        expect.stringContaining(
+          `${SESSION_COOKIE_NAME}=${sessionResponse.token}`,
+        ),
       ]),
     );
   });

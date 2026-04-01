@@ -162,6 +162,17 @@ async function getById(projectId: number): Promise<Project | null> {
   });
 }
 
+async function getAllByAuthorId(authorId: number): Promise<Project[]> {
+  return run(async () => {
+    const projects = await prisma.projects.findMany({
+      where: { author_id: authorId },
+      select: projectSelect,
+    });
+
+    return projects.map(mapProject);
+  });
+}
+
 async function create(project: ProjectWriteInput): Promise<Project> {
   return run(async () => {
     const { author_id, tags = [], ...projectData } = project;
@@ -347,6 +358,7 @@ async function destroy(projectId: number): Promise<void> {
 
 export const projectsService = {
   getAll,
+  getAllByAuthorId,
   getById,
   create,
   getComments,

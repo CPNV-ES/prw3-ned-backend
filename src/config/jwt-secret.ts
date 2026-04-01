@@ -1,5 +1,11 @@
 import { randomBytes } from "crypto";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "fs";
 import path from "path";
 
 const PRIVATE_STORAGE_ROOT = path.resolve(process.cwd(), "storages/private");
