@@ -18,6 +18,7 @@ import usersRoutes from "./routes/users.routes";
 const app = express();
 ensureProjectImagesDirectoryExists();
 app.use(express.json());
+app.use("/", express.static(path.join(__dirname, "public")));
 app.use("/assets", express.static(path.join(ASSETS_ROOT)));
 app.use("/storages", express.static(STORAGE_ROOT));
 app.use("/api", usersRoutes);
@@ -33,5 +34,9 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`Server running on http://localhost:${port}`);
   });
 }
+
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 export { app };
