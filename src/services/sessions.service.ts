@@ -13,7 +13,6 @@ export interface CreateSessionInput {
 }
 
 export interface SessionOutput {
-  token: string;
   expiresAt: string;
   user: {
     id: number;
@@ -105,7 +104,7 @@ export async function getCurrentSession(
 export async function createSession({
   username,
   password,
-}: CreateSessionInput): Promise<SessionOutput> {
+}: CreateSessionInput): Promise<SessionOutput & { token: string }> {
   const user = await prisma.users.findUnique({ where: { username } });
 
   if (!user) {

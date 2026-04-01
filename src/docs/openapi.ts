@@ -13,6 +13,11 @@ const openApiSpec = {
   ],
   components: {
     securitySchemes: {
+      cookieAuth: {
+        type: "apiKey",
+        in: "cookie",
+        name: "session",
+      },
       bearerAuth: {
         type: "http",
         scheme: "bearer",
@@ -116,10 +121,6 @@ const openApiSpec = {
       Session: {
         type: "object",
         properties: {
-          token: {
-            type: "string",
-            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example",
-          },
           expiresAt: {
             type: "string",
             format: "date-time",
@@ -129,7 +130,7 @@ const openApiSpec = {
             $ref: "#/components/schemas/SessionUser",
           },
         },
-        required: ["token", "expiresAt", "user"],
+        required: ["expiresAt", "user"],
       },
       CurrentSession: {
         type: "object",
@@ -274,7 +275,7 @@ const openApiSpec = {
       get: {
         tags: ["Projects"],
         summary: "List projects",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "name",
@@ -347,7 +348,7 @@ const openApiSpec = {
       post: {
         tags: ["Projects"],
         summary: "Create a new project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -427,7 +428,7 @@ const openApiSpec = {
       get: {
         tags: ["Projects"],
         summary: "Get a project by ID",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -474,7 +475,7 @@ const openApiSpec = {
       put: {
         tags: ["Projects"],
         summary: "Update a project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -556,7 +557,7 @@ const openApiSpec = {
       delete: {
         tags: ["Projects"],
         summary: "Delete a project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -608,7 +609,7 @@ const openApiSpec = {
       post: {
         tags: ["Projects"],
         summary: "Like a project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -657,7 +658,7 @@ const openApiSpec = {
       get: {
         tags: ["Projects"],
         summary: "Get all comments of a project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -717,7 +718,7 @@ const openApiSpec = {
       post: {
         tags: ["Projects"],
         summary: "Post a comment on a project",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -842,7 +843,7 @@ const openApiSpec = {
       get: {
         tags: ["Users"],
         summary: "List users",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "page",
@@ -904,7 +905,7 @@ const openApiSpec = {
       get: {
         tags: ["Users"],
         summary: "Get a user by ID",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -967,7 +968,7 @@ const openApiSpec = {
       get: {
         tags: ["Sessions"],
         summary: "Get the current session",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         responses: {
           "200": {
             description: "Current session details",
@@ -1040,7 +1041,7 @@ const openApiSpec = {
       delete: {
         tags: ["Sessions"],
         summary: "Delete the current session",
-        security: [{ bearerAuth: [] }],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
         responses: {
           "204": {
             description: "Session deleted successfully",

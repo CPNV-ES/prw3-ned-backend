@@ -1,5 +1,7 @@
 import request from "supertest";
 
+import { SESSION_COOKIE_NAME } from "../../src/config/session-cookie";
+
 jest.mock("../../src/routes/sessions.routes", () => {
   const { Router } = jest.requireActual("express");
   return { __esModule: true, default: Router() };
@@ -69,7 +71,7 @@ describe("/api/users", () => {
 
     const response = await request(app)
       .get("/api/users")
-      .set("Authorization", "Bearer test-token")
+      .set("Cookie", `${SESSION_COOKIE_NAME}=test-token`)
       .expect(200);
 
     expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
@@ -96,7 +98,7 @@ describe("/api/users", () => {
 
     const response = await request(app)
       .get("/api/users/1")
-      .set("Authorization", "Bearer test-token")
+      .set("Cookie", `${SESSION_COOKIE_NAME}=test-token`)
       .expect(200);
 
     expect(getCurrentSessionMock).toHaveBeenCalledWith("test-token");
