@@ -36,7 +36,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
       DATABASE_HOST: db
       DATABASE_PORT: 3306
@@ -47,7 +46,7 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
-      - ./data/projects:/app/storages/projects
+      - ./data/backend:/app/storages
     healthcheck:
       test:
         [

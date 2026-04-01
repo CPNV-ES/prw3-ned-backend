@@ -1,6 +1,5 @@
 const port = Number(process.env.PORT) || 3000;
 const nodeEnv = process.env.NODE_ENV || "development";
-const jwtSecret = process.env.JWT_SECRET || "change-me-before-production";
 const jwtExpiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 3600;
 
-export { port, nodeEnv, jwtSecret, jwtExpiresInSeconds };
+export { port, nodeEnv, jwtExpiresInSeconds };

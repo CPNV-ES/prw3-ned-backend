@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma";
 
-import { jwtExpiresInSeconds, jwtSecret } from "../config/env";
+import { jwtExpiresInSeconds } from "../config/env";
+import { jwtSecret } from "../config/jwt-secret";
 import { createUnauthorizedError } from "../utils/http-error";
 import { signJwt, verifyJwt, type JwtPayload } from "../utils/jwt";
 import { verifyPassword } from "../utils/password";

@@ -42,7 +42,6 @@ This repository includes a Docker Compose setup in `examples/productions-setup` 
    - `DATABASE_NAME`
    - `DATABASE_USER`
    - `DATABASE_PASSWORD`
-   - `JWT_SECRET`
 3. Start the stack from the repository root:
 
 ```bash
@@ -67,6 +66,7 @@ Notes:
 - Only the API port is published by default. The database stays on the internal Docker network.
 - The API is exposed on `APP_PORT` from `examples/productions-setup/.env` and defaults to `3000`.
 - Uploaded project images are stored in `examples/productions-setup/data/projects`.
+- The JWT signing secret is created automatically in `storages/private/jwt-secret` on first start and should be persisted and kept private.
 - MySQL data is stored in `examples/productions-setup/data/mysql`.
 - In a real public deployment, place a reverse proxy or load balancer in front of the `app` service for TLS termination.
 

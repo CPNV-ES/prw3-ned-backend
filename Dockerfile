@@ -46,7 +46,7 @@ COPY --from=build /app/src/assets ./src/assets
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY package.json ./
 
-RUN mkdir -p /app/storages/projects && chown -R node:node /app
+RUN mkdir -p /app/storages/projects /app/storages/private && chown -R node:node /app
 
 USER node
 

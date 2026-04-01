@@ -7,7 +7,7 @@ import errorHandler from "./middlewares/errorHandler";
 import {
   ensureProjectImagesDirectoryExists,
   ASSETS_ROOT,
-  STORAGE_ROOT,
+  PROJECT_IMAGES_DIRECTORY,
 } from "./utils/project-images";
 import healthRoutes from "./routes/health.routes";
 import projectsRoutes from "./routes/projects.routes";
@@ -20,7 +20,7 @@ ensureProjectImagesDirectoryExists();
 app.use(express.json());
 app.use("/", express.static(path.join(__dirname, "public")));
 app.use("/assets", express.static(path.join(ASSETS_ROOT)));
-app.use("/storages", express.static(STORAGE_ROOT));
+app.use("/storages/projects", express.static(PROJECT_IMAGES_DIRECTORY));
 app.use("/api", usersRoutes);
 app.use("/api", sessionsRoutes);
 app.use("/api", healthRoutes);
